@@ -768,3 +768,14 @@ async function choferConfirmaCarga() {
 }
 
 document.addEventListener('DOMContentLoaded', async () => { actualizarReloj(); await cargar(false); });
+// main.js o dentro de un <script> en tu HTML
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/service-worker.js')
+      .then(registration => {
+        console.log('ServiceWorker registrado con éxito con el scope: ', registration.scope);
+      }, err => {
+        console.log('El registro del ServiceWorker falló: ', err);
+      });
+  });
+}
