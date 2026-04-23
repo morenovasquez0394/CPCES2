@@ -1,21 +1,30 @@
-const CACHE_NAME = 'cpces-app-v1';
+// service-worker.js
+const CACHE_NAME = 'cpces-chofer-v1';
+const urlsToCache = [
+  '/chofer', // La URL de inicio de tu módulo
+  // Aquí puedes añadir rutas a CSS, JS o imágenes importantes
+  // '/css/style.css',
+  // '/js/main.js'
+];
 
-// Cuando la app se instala en el celular, guarda estos archivos en su memoria
-self.addEventListener('install', (event) => {
-    event.waitUntil(
-        caches.open(CACHE_NAME).then((cache) => {
-            return cache.addAll([
-                './',
-                './index.html',
-                './manifest.json'
-            ]);
-        })
-    );
+// Evento Install: Guarda archivos estáticos en caché
+self.addEventListener('install', event => {
+  event.waitUntil(
+    caches.open(CACHE_NAME)
+      .then(cache => {
+        console.log('Archivos en caché');
+        return cache.addAll(urlsToCache);
+      })
+  );
 });
 
-// Cuando la app pide datos, intenta descargarlos, si no hay red, usa los guardados
-self.addEventListener('fetch', (event) => {
-    event.respondWith(
-        fetch(event.request).catch(() => caches.match(event.request))
-    );
+// Evento Fetch: Intercepta peticiones de red
+self.addEventListener('fetch', event => {
+  event.respondWith(
+    caches.match(event.request)
+      .then(response => {
+        // Devuelve desde la caché si existe, sino, ve a la red
+        return response || fetch(event.request);
+      })
+  );
 });
