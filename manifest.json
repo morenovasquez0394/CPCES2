@@ -1,0 +1,21 @@
+{
+  "name": "CPCES App Chofer",
+  "short_name": "Choferes",
+  "description": "Aplicación de gestión de viajes para choferes de CPCES",
+  "start_url": "/chofer", 
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#0056b3", 
+  "icons": [
+    {
+      "src": "/ruta/a/tus/iconos/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/ruta/a/tus/iconos/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
