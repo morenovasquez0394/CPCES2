@@ -1,17 +1,20 @@
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <!-- Enlace al Manifest -->
-<link rel="manifest" href="/manifest.json">
+    <!-- CÁMBIALAS PARA QUE SE VEAN EXACTAMENTE ASÍ: -->
+<link rel="manifest" href="./manifest.json">
+<link rel="apple-touch-icon" href="./icon-192.png">
 
-<!-- Color de la barra de estado en móviles -->
-<meta name="theme-color" content="#0056b3">
+    <!-- Color de la barra de estado en móviles -->
+    <meta name="theme-color" content="#0056b3">
 
-<!-- Soporte específico para iOS (Apple es un poco especial) -->
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black">
-<meta name="apple-mobile-web-app-title" content="CPCES Chofer">
-<link rel="apple-touch-icon" href="/ruta/a/tus/iconos/icon-192x192.png">
+    <!-- Soporte específico para iOS (Apple es un poco especial) -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="apple-mobile-web-app-title" content="CPCES Chofer">
+    <link rel="apple-touch-icon" href="/ruta/a/tus/iconos/icon-192x192.png">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CP CES - Control Logístico de Patio</title>
@@ -21,6 +24,17 @@
     <script src="https://unpkg.com/html5-qrcode"></script>
     <!-- Enlace a los estilos -->
     <link rel="stylesheet" href="style.css">
+    
+    <!-- ESTILOS PARA SCROLL INDEPENDIENTE (PUNTO 7) -->
+    <style>
+        .sidebar-scroll { max-height: calc(100vh - 200px); overflow-y: auto; scrollbar-width: thin; scrollbar-color: #1e293b transparent; }
+        .sidebar-scroll::-webkit-scrollbar { width: 4px; }
+        .sidebar-scroll::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 10px; }
+        
+        .table-scroll { max-height: calc(100vh - 220px); overflow-y: auto; scrollbar-width: thin; scrollbar-color: #3b82f6 transparent; }
+        .table-scroll::-webkit-scrollbar { width: 6px; }
+        .table-scroll::-webkit-scrollbar-thumb { background: #3b82f6; border-radius: 10px; }
+    </style>
 </head>
 <body class="bg-[#020617] text-slate-200 min-h-screen">
 
@@ -65,33 +79,27 @@
     <div id="app" class="hidden min-h-screen flex flex-col">
         
         <!-- HEADER GLOBAL ESTATICO Y REDUCIDO -->
-        <header class="sticky top-0 z-50 bg-[#020617]/95 backdrop-blur-xl border-b border-slate-800 px-4 lg:px-8 py-3 flex flex-col shadow-xl w-full transition-all">
-            
-            <!-- Fila Superior: Título, Sync y Botón Volver -->
+        <header class="sticky top-0 z-50 bg-[#020617]/95 backdrop-blur-xl border-b border-slate-800 px-4 lg:px-10 py-3 flex flex-col shadow-xl w-full transition-all">
             <div class="flex items-center justify-between w-full">
-                <!-- Título y Sync (Izquierda) -->
-                <div class="flex items-center gap-3 md:gap-4">
-                    <button onclick="syncManual()" class="glass p-2.5 rounded-full text-sm md:text-lg hover:bg-blue-500/20 active:scale-95 transition-all shadow-lg border border-slate-700/50" title="Sincronizar Manualmente">🔄</button>
+                <div class="flex items-center gap-4">
+                    <button onclick="syncManual()" class="glass p-3 rounded-full text-lg hover:bg-blue-500/20 active:scale-95 transition-all shadow-lg" title="Sincronizar Manualmente">🔄</button>
                     <div>
-                        <h1 id="tituloModulo" class="text-lg md:text-2xl font-black italic tracking-tighter text-blue-500 uppercase leading-none mb-0.5">Módulo</h1>
-                        <div class="flex items-center gap-2 md:gap-3">
-                            <div id="reloj" class="text-[9px] md:text-[10px] font-mono text-slate-300 uppercase tracking-widest font-bold"></div>
+                        <h1 id="tituloModulo" class="text-2xl font-black italic tracking-tighter text-blue-500 uppercase leading-none mb-1">Módulo</h1>
+                        <div class="flex items-center gap-3">
+                            <div id="reloj" class="text-xs font-mono text-slate-300 uppercase tracking-widest font-bold"></div>
                             <div id="fechaLarga" class="text-[9px] text-blue-400/60 uppercase tracking-widest font-black hidden md:block"></div>
                         </div>
                     </div>
                 </div>
-
-                <!-- Botón Volver (Derecha - Armónico y no invasivo) -->
-                <button onclick="volverMenu()" class="glass bg-slate-900/40 hover:bg-red-900/20 border border-slate-800 hover:border-red-500/40 px-4 py-2 rounded-xl flex items-center gap-2 transition-all active:scale-95 shadow-md">
-                    <span class="text-[9px] font-black tracking-[0.2em] text-slate-400 uppercase hidden sm:block">Centro de Control</span>
-                    <span class="text-[9px] font-black tracking-[0.2em] text-slate-400 uppercase sm:hidden">Volver</span>
-                    <span class="text-red-500/80 text-xs font-black">✕</span>
+                <button onclick="volverMenu()" class="glass px-4 py-2 rounded-xl text-[10px] font-black tracking-widest hover:bg-red-500/20 transition-all border-red-500/20 uppercase flex items-center gap-2">
+                    <span class="hidden sm:block">Centro de Control</span>
+                    <span class="sm:hidden">Volver</span>
+                    <span class="text-red-500 text-sm">✕</span>
                 </button>
             </div>
 
-            <!-- Fila Inferior: Estadísticas (solo se muestra si hay datos) -->
+            <!-- CONTENEDOR DINÁMICO PARA ESTADÍSTICAS -->
             <div id="headerStats" class="w-full mt-3 overflow-hidden empty:hidden"></div>
-
         </header>
 
         <!-- CONTENEDOR DE MODULOS -->
@@ -120,19 +128,21 @@
                 </div>
             </div>
 
-            <!-- PATIO -->
+            <!-- PATIO MODIFICADO (PUNTOS 1, 4 Y 7) -->
             <div id="patio" class="hidden">
                 <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                    <div class="lg:col-span-2 space-y-4">
-                        <div class="glass p-5 rounded-2xl border-l-4 border-cyan-500 shadow-[0_0_15px_rgba(6,182,212,0.1)]">
+                    
+                    <!-- PANEL IZQUIERDO CON SCROLL INDEPENDIENTE (PUNTO 7) -->
+                    <div class="lg:col-span-2 sidebar-scroll pr-2">
+                        <div class="glass p-5 rounded-2xl border-l-4 border-cyan-500 shadow-[0_0_15px_rgba(6,182,212,0.1)] mb-4">
                             <p class="text-[10px] font-black text-slate-500 uppercase mb-1 tracking-widest">Viajes Despachados</p>
                             <div id="kpiViajes" class="text-4xl font-black text-cyan-400 mt-1">0</div>
                         </div>
-                        <div class="glass p-5 rounded-2xl border-l-4 border-blue-500">
+                        <div class="glass p-5 rounded-2xl border-l-4 border-blue-500 mb-4">
                             <p class="text-[10px] font-black text-slate-500 uppercase mb-3 tracking-widest">En Patio</p>
                             <ul id="listaKpiPatio" class="text-xs font-bold space-y-1 text-slate-400"></ul>
                         </div>
-                        <div class="glass p-5 rounded-2xl border-l-4 border-emerald-500">
+                        <div class="glass p-5 rounded-2xl border-l-4 border-emerald-500 mb-4">
                             <p class="text-[10px] font-black text-slate-500 uppercase mb-3 tracking-widest">En Rampa</p>
                             <ul id="listaKpiRampa" class="text-xs font-bold space-y-1 text-slate-400"></ul>
                         </div>
@@ -141,16 +151,34 @@
                             <div id="listaSolicitudesDespacho" class="space-y-2"></div>
                         </div>
                     </div>
+
+                    <!-- TABLA DERECHA CON SCROLL INDEPENDIENTE Y FILTROS POR COLUMNA (PUNTO 1 Y 4) -->
                     <div class="lg:col-span-10 glass rounded-3xl overflow-hidden flex flex-col">
-                        <div class="p-4 border-b border-slate-800 bg-slate-900/30 flex gap-4 items-center">
-                            <div class="relative flex-1">
-                                <span class="absolute left-4 top-2.5 text-slate-500 text-sm pointer-events-none">🔍</span>
-                                <input id="filtroPatio" oninput="renderPatio()" class="w-full bg-black/40 border border-slate-700 rounded-xl p-2 pl-10 text-sm outline-none focus:border-blue-500 text-white placeholder-slate-600" placeholder="Filtrar por ID, Nombre o Tipo…">
-                            </div>
-                        </div>
-                        <div class="scroll-container">
-                            <table class="w-full text-left table-compact">
-                                <thead><tr><th>Ubicación</th><th>ID</th><th>Conductor</th><th>Tipo</th><th>Tiempo</th><th>Estado</th><th style="text-align:right">Acción</th></tr></thead>
+                        <div class="table-scroll flex-1">
+                            <table class="w-full text-left table-compact relative">
+                                <thead class="sticky top-0 bg-slate-900 z-10 shadow-md">
+                                    <tr>
+                                        <th>Ubicación</th>
+                                        <th>ID</th>
+                                        <th>Conductor</th>
+                                        <th>Tipo</th>
+                                        <th>Hora Llegada</th> <!-- NUEVO PUNTO 1 -->
+                                        <th>Tiempo</th>
+                                        <th>Estado</th>
+                                        <th style="text-align:right">Acción</th>
+                                    </tr>
+                                    <!-- FILA DE FILTROS INDIVIDUALES (NUEVO PUNTO 4) -->
+                                    <tr class="bg-slate-950/90 backdrop-blur-md">
+                                        <th class="p-1.5 border-b border-slate-800"><input id="filtro_ubicacion" oninput="renderPatio()" class="w-full bg-black/60 border border-slate-700 rounded text-[10px] p-1.5 outline-none focus:border-blue-500 text-slate-200" placeholder="Buscar..."></th>
+                                        <th class="p-1.5 border-b border-slate-800"><input id="filtro_id" oninput="renderPatio()" class="w-full bg-black/60 border border-slate-700 rounded text-[10px] p-1.5 outline-none focus:border-blue-500 text-slate-200" placeholder="Buscar..."></th>
+                                        <th class="p-1.5 border-b border-slate-800"><input id="filtro_conductor" oninput="renderPatio()" class="w-full bg-black/60 border border-slate-700 rounded text-[10px] p-1.5 outline-none focus:border-blue-500 text-slate-200" placeholder="Buscar..."></th>
+                                        <th class="p-1.5 border-b border-slate-800"><input id="filtro_tipo" oninput="renderPatio()" class="w-full bg-black/60 border border-slate-700 rounded text-[10px] p-1.5 outline-none focus:border-blue-500 text-slate-200" placeholder="Buscar..."></th>
+                                        <th class="p-1.5 border-b border-slate-800"></th>
+                                        <th class="p-1.5 border-b border-slate-800"></th>
+                                        <th class="p-1.5 border-b border-slate-800"><input id="filtro_estado" oninput="renderPatio()" class="w-full bg-black/60 border border-slate-700 rounded text-[10px] p-1.5 outline-none focus:border-blue-500 text-slate-200" placeholder="Buscar..."></th>
+                                        <th class="p-1.5 border-b border-slate-800"></th>
+                                    </tr>
+                                </thead>
                                 <tbody id="tablaPatioCuerpo"></tbody>
                             </table>
                         </div>
@@ -187,14 +215,10 @@
                         <div id="contPos" class="flex flex-col gap-2"><label class="text-[10px] font-black text-slate-600 ml-3 uppercase">Posición / Rango</label><input id="regPosicion" class="p-4 bg-slate-900 rounded-2xl border border-slate-800 outline-none focus:border-blue-500 font-bold" placeholder="PUESTO OPERATIVO" onkeydown="if(event.key==='Enter') crearUsuario()"></div>
                         <div id="contTel" class="hidden flex flex-col gap-2"><label class="text-[10px] font-black text-slate-600 ml-3 uppercase">Contacto</label><input id="regTelefono" class="p-4 bg-slate-900 rounded-2xl border border-slate-800 outline-none focus:border-blue-500 font-bold" placeholder="TELÉFONO" onkeydown="if(event.key==='Enter') document.getElementById('regCompania').focus()"></div>
                         <div id="contComp" class="hidden flex flex-col gap-2"><label class="text-[10px] font-black text-slate-600 ml-3 uppercase">Compañía</label><input id="regCompania" class="p-4 bg-slate-900 rounded-2xl border border-slate-800 outline-none focus:border-blue-500 font-bold" placeholder="EMPRESA" onkeydown="if(event.key==='Enter') document.getElementById('regTipoCamion').focus()"></div>
+                        <!-- CAMIÓN UNIFICADO (PUNTO 0) -->
                         <div id="contTipoCam" class="hidden flex flex-col gap-2"><label class="text-[10px] font-black text-slate-600 ml-3 uppercase">Configuración de Camión</label>
                             <select id="regTipoCamion" class="p-4 bg-slate-900 rounded-2xl border border-slate-800 outline-none focus:border-blue-500 font-bold text-slate-400" onkeydown="if(event.key==='Enter') crearUsuario()">
-                                <option value="CAMION_FRIO">CAMION FRIO ❄️</option>
-                                <option value="CAMION_SECO">CAMION SECO</option>
-                                <option value="DOLLY">DOLLY</option>
-                                <option value="FURGON_REF">FURGON REF ❄️</option>
-                                <option value="FURGON_SECO">FURGON SECO</option>
-                                <option value="RIGIDO">RIGIDO</option>
+                                <!-- Llenado por JS -->
                             </select>
                         </div>
                         <button onclick="crearUsuario()" class="lg:col-span-3 bg-blue-600 hover:bg-blue-500 p-6 rounded-2xl font-black text-sm tracking-[0.3em] transition-all shadow-2xl mt-6 uppercase">Vincular al Sistema</button>
@@ -221,7 +245,23 @@
         </div>
     </div>
 
-    <!-- POPUPS Y MODALES -->
+    <!-- MODAL SELECTOR DINÁMICO (PARA SUSTITUIR PROMPTS PUNTOS 2 y 6) -->
+    <div id="selectorModal" class="hidden fixed inset-0 bg-black/90 backdrop-blur-sm flex items-center justify-center z-[1000] p-4">
+        <div class="bg-[#0f172a] border border-slate-700 w-full max-w-sm rounded-[2rem] flex flex-col max-h-[80vh] shadow-[0_0_50px_rgba(59,130,246,0.15)]">
+            <div class="p-5 border-b border-slate-800 flex justify-between items-center">
+                <h3 id="selectorModalTitle" class="text-xs font-black uppercase text-blue-400 tracking-widest">Opciones</h3>
+                <button onclick="cerrarSelectorModal()" class="text-slate-500 hover:text-white text-xl transition-colors">&times;</button>
+            </div>
+            <div id="selectorOptionsContainer" class="p-4 space-y-2 overflow-y-auto flex-1 scrollbar-thin scrollbar-thumb-slate-700">
+                <!-- Los botones se inyectan por JS -->
+            </div>
+            <div class="p-4 bg-slate-900/50 rounded-b-[2rem] text-center border-t border-slate-800">
+                <button onclick="cerrarSelectorModal()" class="text-[10px] font-black text-slate-400 hover:text-white uppercase tracking-widest transition-colors">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- POPUPS Y MODALES EXISTENTES -->
     <div id="modalScanner" class="hidden fixed inset-0 bg-black/95 z-[999] flex flex-col items-center justify-center p-4">
         <h3 class="text-white font-black text-2xl uppercase tracking-widest mb-6">Escáner Activo</h3>
         <div class="w-full max-w-sm bg-white rounded-3xl overflow-hidden shadow-[0_0_50px_rgba(16,185,129,0.3)]">
@@ -238,7 +278,7 @@
     
     <div id="choferAlert" class="hidden fixed top-10 left-1/2 -translate-x-1/2 w-[92%] max-w-md bg-blue-600 p-8 rounded-[2.5rem] shadow-[0_20px_50px_rgba(37,99,235,0.5)] z-[100] border-4 border-white/20 backdrop-blur-xl">
         <div class="text-center">
-            <div class="text-5xl mb-4">🚛</div><h4 class="font-black text-2xl uppercase mb-2">¡Carga Lista!</h4><p id="msgChofer" class="text-sm font-bold mb-8 text-blue-100 italic"></p><button onclick="choferAceptaSalida()" class="w-full bg-white text-blue-600 font-black py-5 rounded-2xl text-lg uppercase shadow-xl active:scale-95 transition-transform">Confirmar Salida y Liberar Rampa</button>
+            <div class="text-5xl mb-4">🚛</div><h4 class="font-black text-2xl uppercase mb-2">¡Carga Lista!</h4><p id="msgChofer" class="text-sm font-bold mb-8 text-blue-100 italic"></p><button onclick="choferAceptaSalida()" class="w-full bg-white text-blue-600 font-black py-5 rounded-2xl text-lg uppercase shadow-xl active:scale-95 transition-transform border-none">Confirmar Salida y Liberar Rampa</button>
         </div>
     </div>
 
