@@ -1,4 +1,3 @@
-// --- START OF FILE script.js ---
 
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxQrqzUTJjixGy2vv1JKetMApWrZbp6sivsDrSCZaQni-UybsGiCO_DJzoeV5oM3Nevvw/exec';
         
@@ -12,8 +11,11 @@ let tiemposCiclos = [];
 let usuarioLogueado = null;
 let html5QrcodeScanner = null;
 
-// ---> NUEVO: Variable para recordar el estado anterior del chofer <---
+// ---> Variable para recordar el estado anterior del chofer <---
 let estadoChoferAnterior = null; 
+
+// ---> NUEVO: Variable para el control de velocidad (Actualización Inteligente) <---
+let serverLastUpdate = null;
 
 // PALETA DE ESTADOS UNIVERSAL
 const ESTADOS_UI = {
@@ -27,14 +29,13 @@ const ESTADOS_UI = {
 };
 
 // CONSTANTES DE TIPOS DE CAMION
-const TIPOS_CAMION = ['CAMION_FRIO', 'CAMION_SECO', 'DOLLY', 'FURGON_REF', 'FURGON_SECO', 'RIGIDO'];
-const LABELS_CAMION = {
-    'CAMION_FRIO': 'Camión Frío',
-    'CAMION_SECO': 'Camión Seco',
-    'DOLLY': 'Dolly',
-    'FURGON_REF': 'Furgón Ref',
-    'FURGON_SECO': 'Furgón Seco',
-    'RIGIDO': 'Rígido'
+const TIPOS_CAMION = {
+    'CAMION_FRIO': 'CAMION FRIO ❄️',
+    'CAMION_SECO': 'CAMION SECO',
+    'DOLLY': 'DOLLY',
+    'FURGON_REF': 'FURGON REF ❄️',
+    'FURGON_SECO': 'FURGON SECO',
+    'RIGIDO': 'RIGIDO'
 };
 
 function setUILoading(isLoading) {
@@ -55,12 +56,26 @@ async function guardar() {
     finally { setUILoading(false); }
 }
 
+// ---> FUNCIÓN CARGAR MODIFICADA PARA SER SÚPER RÁPIDA <---
 async function cargar(silencioso = false) {
     if (!silencioso) setUILoading(true);
     try {
-        const response = await fetch(SCRIPT_URL);
+        // Armamos la URL para preguntarle a Google si hay cambios desde la última vez
+        const urlFetch = serverLastUpdate ? `${SCRIPT_URL}?lastUpdate=${serverLastUpdate}` : SCRIPT_URL;
+        
+        const response = await fetch(urlFetch);
         if (!response.ok) throw new Error("Error red");
         const data = await response.json();
+        
+        // Si Google responde que no hay cambios, nos detenemos aquí. Ahorramos tiempo y datos.
+        if (data.changed === false) {
+            return;
+        }
+        
+        // Si hubo cambios, actualizamos nuestro sello de tiempo interno
+        if (data.lastUpdate) {
+            serverLastUpdate = data.lastUpdate;
+        }
         
         usuarios = data.usuarios || [];
         patio = data.patio || [];
@@ -69,6 +84,13 @@ async function cargar(silencioso = false) {
         rampas = data.rampas || [];
         auditoria = data.auditoria || [];
         tiemposCiclos = data.tiemposCiclos || [];
+
+        // Llenar el select del Admin con los camiones unificados
+        const selAdmin = document.getElementById('regTipoCamion');
+        if (selAdmin && selAdmin.options.length === 0) {
+            Object.keys(TIPOS_CAMION).forEach(k => selAdmin.add(new Option(TIPOS_CAMION[k], k)));
+        }
+
     } catch (error) { console.error("Error al cargar:", error); } 
     finally { if (!silencioso) setUILoading(false); }
 }
@@ -288,6 +310,32 @@ async function validarYRegistrar() {
     const vehiculoEnPatio = patio.find(p => p.user === ficha);
     const fh = formatoFechaHora();
 
+    if (vehiculoEnPatio && vehiculoEnPatio.estado === 'ENVIADO_A_TIENDA') {
+        const vehiculoIndex = patio.findIndex(p => p.user === ficha);
+        const nuevoIdCiclo = "CYC-" + Date.now().toString().slice(-6);
+
+        patio[vehiculoIndex] = {
+            ...patio[vehiculoIndex],
+            idCiclo: nuevoIdCiclo,
+            estado: "EN_PATIO",
+            hora: fh.hora,
+            fecha: fh.fecha,
+            timestamp: Date.now(),
+            lastUpdate: Date.now(),
+            rampa: null,
+            tienda: null,
+            t_llegada_rampa: "",
+            t_fin_carga: ""
+        };
+
+        historialEntradas.unshift({ ...patio[vehiculoIndex] });
+        msg.innerHTML = `<span class='text-emerald-500 tracking-widest'>RE-INGRESO OK: ${patio[vehiculoIndex].nom.split(' ')[0]}</span>`;
+        fichaInput.value = "";
+        await guardar();
+        renderHistorialGarita();
+        return; 
+    }
+
     if (vehiculoEnPatio) {
         let esSalidaValida = false;
 
@@ -302,11 +350,8 @@ async function validarYRegistrar() {
             esSalidaValida = true;
             
             tiemposCiclos.unshift({
-                fecha: fh.fecha, ficha: ficha, ciclo: vehiculoEnPatio.idCiclo,
-                hora_llegada: vehiculoEnPatio.hora,
-                tiempo_patio: calcularDiferenciaMinutos(tEntrada, tAhora),
-                tiempo_rampa: "N/A", tiempo_cargado: "N/A",
-                hora_salida: fh.hora
+                fecha: fh.fecha, ficha: ficha, ciclo: vehiculoEnPatio.idCiclo, hora_llegada: vehiculoEnPatio.hora,
+                tiempo_patio: calcularDiferenciaMinutos(tEntrada, tAhora), tiempo_rampa: "N/A", tiempo_cargado: "N/A", hora_salida: fh.hora
             });
 
         } else if (vehiculoEnPatio.estado === "CARGADO" || vehiculoEnPatio.estado === "CARGA_LISTA") {
@@ -320,12 +365,9 @@ async function validarYRegistrar() {
             esSalidaValida = true;
 
             tiemposCiclos.unshift({
-                fecha: fh.fecha, ficha: ficha, ciclo: vehiculoEnPatio.idCiclo,
-                hora_llegada: vehiculoEnPatio.hora,
-                tiempo_patio: calcularDiferenciaMinutos(tEntrada, tLlegadaRampa),
-                tiempo_rampa: calcularDiferenciaMinutos(tLlegadaRampa, tFinCarga),
-                tiempo_cargado: calcularDiferenciaMinutos(tFinCarga, tAhora), 
-                hora_salida: fh.hora
+                fecha: fh.fecha, ficha: ficha, ciclo: vehiculoEnPatio.idCiclo, hora_llegada: vehiculoEnPatio.hora,
+                tiempo_patio: calcularDiferenciaMinutos(tEntrada, tLlegadaRampa), tiempo_rampa: calcularDiferenciaMinutos(tLlegadaRampa, tFinCarga),
+                tiempo_cargado: calcularDiferenciaMinutos(tFinCarga, tAhora), hora_salida: fh.hora
             });
 
         } else {
@@ -360,6 +402,7 @@ async function validarYRegistrar() {
         timestamp: Date.now(),
         lastUpdate: Date.now(),
         rampa: null,
+        tienda: null,
         t_llegada_rampa: "", 
         t_fin_carga: ""      
     };
@@ -381,11 +424,11 @@ function renderStatsGarita() {
     
     let entradas = { total: 0 };
     let salidas = { total: 0 };
-    TIPOS_CAMION.forEach(t => { entradas[t] = 0; salidas[t] = 0; });
+    Object.keys(TIPOS_CAMION).forEach(t => { entradas[t] = 0; salidas[t] = 0; });
 
     historialEntradas.forEach(op => {
         if (op.fecha && op.fecha.includes(hoy.split('/')[0])) {
-            const tipo = TIPOS_CAMION.includes(op.tipo) ? op.tipo : 'RIGIDO';
+            const tipo = Object.keys(TIPOS_CAMION).includes(op.tipo) ? op.tipo : 'RIGIDO';
             if (op.estado === 'EN_PATIO') {
                 entradas[tipo]++;
                 entradas.total++;
@@ -396,30 +439,30 @@ function renderStatsGarita() {
         }
     });
 
-    let thCols = TIPOS_CAMION.map(t => `<th class="pb-1">${LABELS_CAMION[t]}</th>`).join('');
-    let tdEntradas = TIPOS_CAMION.map(t => `<td class="py-1.5 text-emerald-400/80">${entradas[t]}</td>`).join('');
-    let tdSalidas = TIPOS_CAMION.map(t => `<td class="py-1.5 text-cyan-400/80">${salidas[t]}</td>`).join('');
+    let thCols = Object.keys(TIPOS_CAMION).map(t => `<th class="pb-1 border-l border-slate-700/50">${TIPOS_CAMION[t].replace('❄️', '')}</th>`).join('');
+    let tdEntradas = Object.keys(TIPOS_CAMION).map(t => `<td class="py-1.5 border-l border-slate-800/50 text-emerald-400/80">${entradas[t]}</td>`).join('');
+    let tdSalidas = Object.keys(TIPOS_CAMION).map(t => `<td class="py-1.5 border-l border-slate-800/50 text-cyan-400/80">${salidas[t]}</td>`).join('');
 
     container.innerHTML = `
         <div class="w-full overflow-x-auto bg-slate-900/50 rounded-[1rem] p-2 px-4 text-[9px] md:text-[10px] font-bold text-slate-300 uppercase tracking-widest border border-slate-700/50 shadow-inner">
             <table class="w-full text-center min-w-[600px]">
                 <thead>
                     <tr class="text-slate-500 border-b border-slate-700/50">
-                        <th class="pb-1 text-left">Hoy</th>
+                        <th class="pb-1 text-left italic">HOY</th>
                         ${thCols}
-                        <th class="pb-1 text-white border-l border-slate-700/50 pl-2">Total</th>
+                        <th class="pb-1 text-white border-l border-slate-700/50 pl-4">TOTAL</th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr class="border-b border-slate-800/50">
-                        <td class="py-1.5 text-left text-emerald-500">Entradas</td>
+                        <td class="py-1.5 text-left text-emerald-500">ENTRADAS</td>
                         ${tdEntradas}
-                        <td class="py-1.5 font-black text-white border-l border-slate-700/50 pl-2">${entradas.total}</td>
+                        <td class="py-1.5 font-black text-emerald-400 border-l border-slate-700/50 pl-4">${entradas.total}</td>
                     </tr>
                     <tr>
-                        <td class="py-1.5 text-left text-cyan-500">Salidas</td>
+                        <td class="py-1.5 text-left text-cyan-500">SALIDAS</td>
                         ${tdSalidas}
-                        <td class="py-1.5 font-black text-white border-l border-slate-700/50 pl-2">${salidas.total}</td>
+                        <td class="py-1.5 font-black text-cyan-400 border-l border-slate-700/50 pl-4">${salidas.total}</td>
                     </tr>
                 </tbody>
             </table>
@@ -431,70 +474,38 @@ function renderStatsPatio() {
     const container = document.getElementById("headerStats");
     if (!container || document.getElementById("patio").classList.contains("hidden")) return;
 
-    let stats = { TOTALES: { patio: 0, rampa: 0, cargado: 0, viajes: 0, total: 0 } };
-    TIPOS_CAMION.forEach(t => { stats[t] = { patio: 0, rampa: 0, cargado: 0, viajes: 0, total: 0 }; });
+    let stats = { PATIO: {}, RAMPA: {}, CARGADO: {}, VIAJES: {}, TOTALES: { patio: 0, rampa: 0, cargado: 0, viajes: 0, total: 0 } };
+    Object.keys(TIPOS_CAMION).forEach(t => { stats.PATIO[t]=0; stats.RAMPA[t]=0; stats.CARGADO[t]=0; stats.VIAJES[t]=0; });
 
     patio.forEach(p => {
-        const t = TIPOS_CAMION.includes(p.tipo) ? p.tipo : 'RIGIDO';
-        if (p.estado === 'EN_PATIO' || p.estado === 'ASIGNADO') { stats[t].patio++; stats.TOTALES.patio++; }
-        else if (p.estado === 'EN_RAMPA' || p.estado === 'CARGA_LISTA') { stats[t].rampa++; stats.TOTALES.rampa++; }
-        else if (p.estado === 'CARGADO') { stats[t].cargado++; stats.TOTALES.cargado++; }
+        const t = Object.keys(TIPOS_CAMION).includes(p.tipo) ? p.tipo : 'RIGIDO';
+        if (p.estado === 'EN_PATIO' || p.estado === 'ASIGNADO') { stats.PATIO[t]++; stats.TOTALES.patio++; }
+        else if (p.estado === 'EN_RAMPA' || p.estado === 'CARGA_LISTA') { stats.RAMPA[t]++; stats.TOTALES.rampa++; }
+        else if (p.estado === 'CARGADO') { stats.CARGADO[t]++; stats.TOTALES.cargado++; }
     });
 
     const hoy = formatoFechaHora().fecha;
     historialEntradas.forEach(h => {
         if (h.fecha && h.fecha.includes(hoy.split('/')[0]) && h.estado === 'ENVIADO_A_TIENDA') {
-            const t = TIPOS_CAMION.includes(h.tipo) ? h.tipo : 'RIGIDO';
-            stats[t].viajes++;
-            stats.TOTALES.viajes++;
+            const t = Object.keys(TIPOS_CAMION).includes(h.tipo) ? h.tipo : 'RIGIDO';
+            stats.VIAJES[t]++; stats.TOTALES.viajes++;
         }
     });
 
-    let htmlRows = TIPOS_CAMION.map(t => {
-        stats[t].total = stats[t].patio + stats[t].rampa + stats[t].cargado;
-        return `
-            <tr class="border-b border-slate-800/50">
-                <td class="py-1 text-left text-slate-400">${LABELS_CAMION[t]}</td>
-                <td class="py-1">${stats[t].patio}</td>
-                <td class="py-1">${stats[t].rampa}</td>
-                <td class="py-1">${stats[t].cargado}</td>
-                <td class="py-1 text-white">${stats[t].total}</td>
-                <td class="w-4"></td> <!-- Separador -->
-                <td class="py-1 text-cyan-400/80 font-bold border-l border-slate-700/50 pl-4">${stats[t].viajes}</td>
-            </tr>
-        `;
-    }).join('');
-
     stats.TOTALES.total = stats.TOTALES.patio + stats.TOTALES.rampa + stats.TOTALES.cargado;
-
     const kpiElement = document.getElementById("kpiViajes");
     if (kpiElement) kpiElement.innerText = stats.TOTALES.viajes;
 
+    let thCols = Object.keys(TIPOS_CAMION).map(t => `<th class="p-2 border-l border-slate-700/50">${TIPOS_CAMION[t].replace('❄️', '')}</th>`).join('');
+    
     container.innerHTML = `
         <div class="w-full overflow-x-auto bg-slate-900/50 rounded-[1rem] p-2 px-4 text-[9px] font-bold text-slate-300 uppercase tracking-widest border border-slate-700/50 shadow-inner">
             <table class="w-full text-center min-w-[500px]">
-                <thead>
-                    <tr class="text-slate-500 border-b border-slate-700/50">
-                        <th class="pb-1 text-left">Tipo</th>
-                        <th class="pb-1 text-blue-400">Patio</th>
-                        <th class="pb-1 text-emerald-400">Rampa</th>
-                        <th class="pb-1 text-orange-400">Cargado</th>
-                        <th class="pb-1 text-white">Activos</th>
-                        <th class="w-4"></th> <!-- Separador -->
-                        <th class="pb-1 text-cyan-400 border-l border-slate-700/50 pl-4">Viajes</th>
-                    </tr>
-                </thead>
+                <thead><tr class="text-slate-500 border-b border-slate-700/50"><th class="p-2 text-left italic">ESTATUS</th>${thCols}<th class="p-2 text-white border-l border-slate-700/50 pl-4">TOTAL</th></tr></thead>
                 <tbody>
-                    ${htmlRows}
-                    <tr>
-                        <td class="py-1.5 text-left text-white font-black">Total</td>
-                        <td class="py-1.5 text-blue-400 font-black">${stats.TOTALES.patio}</td>
-                        <td class="py-1.5 text-emerald-400 font-black">${stats.TOTALES.rampa}</td>
-                        <td class="py-1.5 text-orange-400 font-black">${stats.TOTALES.cargado}</td>
-                        <td class="py-1.5 text-white font-black">${stats.TOTALES.total}</td>
-                        <td class="w-4"></td> <!-- Separador -->
-                        <td class="py-1.5 text-cyan-400 font-black border-l border-slate-700/50 pl-4">${stats.TOTALES.viajes}</td>
-                    </tr>
+                    <tr class="border-b border-slate-800/50"><td class="p-2 text-left text-blue-500">EN PATIO</td>${Object.keys(TIPOS_CAMION).map(t => `<td class="p-2 border-l border-slate-800/50">${stats.PATIO[t]}</td>`).join('')}<td class="p-2 font-black text-blue-400 border-l border-slate-700/50 pl-4">${stats.TOTALES.patio}</td></tr>
+                    <tr class="border-b border-slate-800/50"><td class="p-2 text-left text-emerald-500">EN RAMPA</td>${Object.keys(TIPOS_CAMION).map(t => `<td class="p-2 border-l border-slate-800/50">${stats.RAMPA[t]}</td>`).join('')}<td class="p-2 font-black text-emerald-400 border-l border-slate-700/50 pl-4">${stats.TOTALES.rampa}</td></tr>
+                    <tr class="border-b border-slate-800/50"><td class="p-2 text-left text-orange-500">CARGADO</td>${Object.keys(TIPOS_CAMION).map(t => `<td class="p-2 border-l border-slate-800/50">${stats.CARGADO[t]}</td>`).join('')}<td class="p-2 font-black text-orange-400 border-l border-slate-700/50 pl-4">${stats.TOTALES.cargado}</td></tr>
                 </tbody>
             </table>
         </div>
@@ -534,7 +545,11 @@ function renderHistorialGarita() {
 }
 
 function renderPatio() {
-    const filtro = (document.getElementById("filtroPatio").value || "").toLowerCase();
+    const filtroUbicacion = (document.getElementById("filtro_ubicacion") ? document.getElementById("filtro_ubicacion").value : "").toLowerCase();
+    const filtroId = (document.getElementById("filtro_id") ? document.getElementById("filtro_id").value : "").toLowerCase();
+    const filtroConductor = (document.getElementById("filtro_conductor") ? document.getElementById("filtro_conductor").value : "").toLowerCase();
+    const filtroTipo = (document.getElementById("filtro_tipo") ? document.getElementById("filtro_tipo").value : "").toLowerCase();
+    const filtroEstado = (document.getElementById("filtro_estado") ? document.getElementById("filtro_estado").value : "").toLowerCase();
     
     const kpiPatioList = (estados) => {
         const f = patio.filter(p => estados.includes(p.estado));
@@ -550,7 +565,16 @@ function renderPatio() {
     const prioridadOrden = { "EN_PATIO": 1, "ASIGNADO": 2, "EN_RAMPA": 3, "CARGA_LISTA": 4, "CARGADO": 5, "ENVIADO_A_TIENDA": 6, "FUERA_DEL_RECINTO": 7 };
 
     const listado = patio
-        .filter(u => !filtro || u.user.toLowerCase().includes(filtro) || u.nom.toLowerCase().includes(filtro) || (u.tipo || "").toLowerCase().includes(filtro))
+        .filter(u => {
+            const ubicacionTexto = (u.estado === 'ENVIADO_A_TIENDA' && u.tienda) ? u.tienda : (u.rampa ? 'R-' + u.rampa : '—');
+            const estadoLabel = (ESTADOS_UI[u.estado] || {}).label || u.estado;
+
+            return (!filtroUbicacion || ubicacionTexto.toLowerCase().includes(filtroUbicacion)) &&
+                   (!filtroId || u.user.toLowerCase().includes(filtroId)) &&
+                   (!filtroConductor || u.nom.toLowerCase().includes(filtroConductor)) &&
+                   (!filtroTipo || (u.tipo || "").toLowerCase().includes(filtroTipo)) &&
+                   (!filtroEstado || estadoLabel.toLowerCase().includes(filtroEstado));
+        })
         .sort((a, b) => {
             const pA = prioridadOrden[a.estado] || 99;
             const pB = prioridadOrden[b.estado] || 99;
@@ -562,44 +586,88 @@ function renderPatio() {
         const min = Math.floor((Date.now() - (u.lastUpdate || u.timestamp)) / 60000);
         const ui = ESTADOS_UI[u.estado] || { label: u.estado, class: "bg-slate-700 text-slate-300 border-slate-500" };
         
+        const ubicacionTexto = (u.estado === 'ENVIADO_A_TIENDA' && u.tienda) ? u.tienda : (u.rampa ? 'R-' + u.rampa : '—');
+        const ubicacionClase = (u.estado === 'ENVIADO_A_TIENDA' && u.tienda) ? 'text-cyan-400' : (u.rampa ? 'text-emerald-400' : 'text-slate-600');
+
+        let accionesHtml = `<button onclick="cambiarEstadoManualmente('${u.user}')" class="bg-slate-700 hover:bg-slate-600 p-1.5 px-3 rounded-lg text-[9px] font-black uppercase transition-all active:scale-95 text-white border-none">MOD</button>`;
+        if (u.estado === 'EN_PATIO') {
+            accionesHtml += ` <button onclick="asignarRampa('${u.user}')" class="bg-blue-600 hover:bg-blue-500 p-1.5 px-3 rounded-lg text-[9px] font-black uppercase transition-all active:scale-95 text-white border-none">ASIG</button>`;
+        }
+
         return `<tr>
-            <td class="font-black ${u.rampa ? 'text-emerald-400' : 'text-slate-600'}">${u.rampa ? 'R-' + u.rampa : '—'}</td>
+            <td class="font-black ${ubicacionClase}">${ubicacionTexto}</td>
             <td class="font-bold text-white">${u.user}</td>
             <td class="text-slate-400 max-w-[150px] truncate">${u.nom}</td>
             <td class="text-[10px] font-bold text-slate-400 uppercase">${u.tipo}</td>
+            <td class="font-mono text-slate-500">${u.hora}</td>
             <td class="font-mono text-slate-500">${u.estado === 'ENVIADO_A_TIENDA' || u.estado === 'FUERA_DEL_RECINTO' ? '-' : min + 'm'}</td>
             <td><span class="px-2 py-0.5 rounded-full text-[9px] font-black uppercase border-b-2 ${ui.class}">${ui.label}</span></td>
-            <td class="text-right">${u.estado === 'EN_PATIO' ? `<button onclick="asignarRampa('${u.user}')" class="bg-blue-600 hover:bg-blue-500 p-1.5 px-3 rounded-lg text-[9px] font-black uppercase transition-all active:scale-95 text-white border-none">Asignar</button>`: ''}</td>
+            <td class="text-right whitespace-nowrap">${accionesHtml}</td>
         </tr>`;
-    }).join("") || `<tr><td colspan="7" class="text-center text-slate-600 py-12 italic text-sm">Sin unidades registradas</td></tr>`;
+    }).join("") || `<tr><td colspan="8" class="text-center text-slate-600 py-12 italic text-sm">Sin unidades registradas</td></tr>`;
     
     document.getElementById("listaSolicitudesDespacho").innerHTML = solicitudesDespacho.map(s => `<div class="glass border border-blue-500/20 p-3 rounded-xl pulse-blue text-[10px]"><p class="text-blue-400 font-black">RAMPA ${s.rampa}</p><p class="text-slate-500 font-bold">${s.tipoReq || 'CUALQUIERA'}</p></div>`).join("") || "";
     
     renderStatsPatio(); 
 }
 
+function abrirSelectorModal(titulo, opciones, callback) {
+    const modal = document.getElementById('selectorModal');
+    const container = document.getElementById('selectorOptionsContainer');
+    document.getElementById('selectorModalTitle').innerText = titulo;
+    
+    container.innerHTML = '';
+    opciones.forEach(opt => {
+        const btn = document.createElement('button');
+        btn.className = "w-full text-left p-4 rounded-xl bg-slate-800 hover:bg-blue-600 transition-all font-bold uppercase text-[10px] tracking-widest border border-slate-700 hover:border-white/50";
+        btn.innerText = opt.label;
+        btn.onclick = () => {
+            modal.classList.add('hidden');
+            callback(opt.value);
+        };
+        container.appendChild(btn);
+    });
+    
+    modal.classList.remove('hidden');
+}
+
+function cerrarSelectorModal() {
+    document.getElementById('selectorModal').classList.add('hidden');
+}
+
+async function cambiarEstadoManualmente(ficha) {
+    const opts = Object.keys(ESTADOS_UI).map(key => ({ value: key, label: ESTADOS_UI[key].label }));
+    
+    abrirSelectorModal(`NUEVO ESTADO PARA ${ficha}`, opts, async (nuevoEstado) => {
+        const idx = patio.findIndex(p => p.user === ficha);
+        patio[idx].estado = nuevoEstado;
+        patio[idx].lastUpdate = Date.now();
+        registrarAuditoria(ficha, patio[idx].nom, "PATIO (Manual)", `Cambió estado a ${nuevoEstado}`, patio[idx].idCiclo);
+        await guardar();
+        renderPatio();
+    });
+}
+
 async function asignarRampa(ficha) {
-    const rampaInput = prompt("Ingrese número de Rampa (1-24):");
-    if (!rampaInput) return;
-    const rNum = parseInt(rampaInput);
-    if (isNaN(rNum) || rNum < 1 || rNum > 24) return alert("Número de rampa inválido.");
-    const ocupanteActual = patio.find(p => p.rampa == rNum && p.estado !== "ENVIADO_A_TIENDA");
-    if (ocupanteActual) return alert(`⛔ ERROR: La rampa ${rNum} ya está ocupada.`);
-    const rampaObj = rampas.find(r => r.rampa_id == rNum);
-    if (rampaObj && rampaObj.status === "AVERIADA") return alert("⛔ RAMPA BLOQUEADA.");
+    const rampasOcupadas = patio.filter(p => p.rampa && p.estado !== "ENVIADO_A_TIENDA").map(p => parseInt(p.rampa));
+    const rampasLibres = Array.from({length: 24}, (_, i) => i + 1).filter(n => !rampasOcupadas.includes(n));
     
-    const idx = patio.findIndex(p => p.user === ficha);
-    if (idx === -1) return;
-    
-    patio[idx].estado = "ASIGNADO"; 
-    patio[idx].rampa = rNum;
-    patio[idx].lastUpdate = Date.now();
-    solicitudesDespacho = solicitudesDespacho.filter(s => s.rampa != rNum);
-    registrarAuditoria(ficha, patio[idx].nom, "PATIO", `Asignado a Rampa ${rNum}`, patio[idx].idCiclo);
-    document.getElementById("driverMsg").innerText = `Notificación enviada al chofer de la unidad ${ficha}.`;
-    document.getElementById("driverAlert").classList.remove("hidden");
-    await guardar();
-    renderPatio();
+    const opts = rampasLibres.map(n => ({ value: n, label: `RAMPA ${n}` }));
+
+    abrirSelectorModal(`ASIGNAR RAMPA A ${ficha}`, opts, async (rNum) => {
+        const idx = patio.findIndex(p => p.user === ficha);
+        patio[idx].estado = "ASIGNADO"; 
+        patio[idx].rampa = rNum;
+        patio[idx].lastUpdate = Date.now();
+        solicitudesDespacho = solicitudesDespacho.filter(s => s.rampa != rNum);
+        registrarAuditoria(ficha, patio[idx].nom, "PATIO", `Asignado a Rampa ${rNum}`, patio[idx].idCiclo);
+        
+        document.getElementById("driverMsg").innerText = `Notificación enviada al chofer de la unidad ${ficha}.`;
+        document.getElementById("driverAlert").classList.remove("hidden");
+        
+        await guardar();
+        renderPatio();
+    });
 }
 
 function renderDespacho() {
@@ -641,6 +709,7 @@ function renderDespacho() {
 async function setSt(i, s) {
     const rampaIndex = rampas.findIndex(r => r.rampa_id == i);
     if(rampaIndex !== -1) rampas[rampaIndex].status = s;
+    
     if (s === "SOLICITUD") {
         const tipoReq = prompt("¿Qué tipo de camión necesita? (Ej: Contenedor)", "");
         if (!solicitudesDespacho.find(x => x.rampa == i)) {
@@ -648,44 +717,59 @@ async function setSt(i, s) {
             registrarAuditoria("N/A", "DESPACHO", "DESPACHO", `Solicitó Camión en Rampa ${i}`);
         }
     } else solicitudesDespacho = solicitudesDespacho.filter(x => x.rampa != i);
+    
     await guardar();
     renderDespacho();
 }
 
 async function reasignarRampa(ficha, rampaActual) {
-    const rNueva = prompt(`Mover unidad ${ficha}.\nIngrese NUEVA rampa (1-24):`);
-    if(!rNueva) return;
-    const n = parseInt(rNueva);
-    if(isNaN(n) || n < 1 || n > 24) return alert("Número de rampa inválido.");
-    if(n === rampaActual) return;
+    const rampasOcupadas = patio.filter(p => p.rampa && p.estado !== "ENVIADO_A_TIENDA").map(p => parseInt(p.rampa));
+    const rampasLibres = Array.from({length: 24}, (_, i) => i + 1).filter(n => !rampasOcupadas.includes(n));
     
-    const ocupada = patio.find(p => p.rampa == n && p.estado !== "ENVIADO_A_TIENDA");
-    if(ocupada) return alert(`⛔ Rampa ${n} ocupada.`);
-    
-    const pIdx = patio.findIndex(p => p.user === ficha);
-    patio[pIdx].rampa = n;
+    const opts = rampasLibres.map(n => ({ value: n, label: `RAMPA ${n}` }));
 
-    const oldR = rampas.findIndex(r => r.rampa_id == rampaActual);
-    if(oldR !== -1) rampas[oldR].status = "LIBRE";
-    const newR = rampas.findIndex(r => r.rampa_id == n);
-    if(newR !== -1) rampas[newR].status = "OCUPADA";
+    abrirSelectorModal(`MOVER ${ficha} A:`, opts, async (n) => {
+        if(n === rampaActual) return;
+        const pIdx = patio.findIndex(p => p.user === ficha);
+        patio[pIdx].rampa = n;
 
-    registrarAuditoria(ficha, patio[pIdx].nom, "DESPACHO", `Movido de Rampa ${rampaActual} a ${n}`, patio[pIdx].idCiclo);
-    await guardar();
-    renderDespacho();
+        const oldR = rampas.findIndex(r => r.rampa_id == rampaActual);
+        if(oldR !== -1) rampas[oldR].status = "LIBRE";
+        const newR = rampas.findIndex(r => r.rampa_id == n);
+        if(newR !== -1) rampas[newR].status = "OCUPADA";
+
+        registrarAuditoria(ficha, patio[pIdx].nom, "DESPACHO", `Movido de Rampa ${rampaActual} a ${n}`, patio[pIdx].idCiclo);
+        await guardar();
+        renderDespacho();
+    });
 }
 
 async function finalizarCarga(r) {
     const idx = patio.findIndex(p => p.rampa == r && p.estado !== "ENVIADO_A_TIENDA");
     if (idx === -1) return;
-    patio[idx].estado = "CARGA_LISTA";
-    patio[idx].t_fin_carga = Date.now(); 
-    registrarAuditoria(patio[idx].user, patio[idx].nom, "DESPACHO", `Carga Finalizada en Rampa ${r}`, patio[idx].idCiclo);
-    await guardar();
-    renderDespacho();
+
+    const tiendas = ["TIENDA CENTRAL", "TIENDA NORTE", "TIENDA SUR", "TIENDA ESTE", "OTRA (ESCRIBIR)"];
+    const opts = tiendas.map(t => ({ value: t, label: t }));
+
+    abrirSelectorModal(`DESTINO PARA RAMPA ${r}`, opts, async (tiendaElegida) => {
+        let tiendaFinal = tiendaElegida;
+        
+        if (tiendaElegida === "OTRA (ESCRIBIR)") {
+            const manual = prompt("Escriba el nombre de la tienda destino:");
+            if (!manual) return; 
+            tiendaFinal = manual.toUpperCase();
+        }
+
+        patio[idx].estado = "CARGA_LISTA";
+        patio[idx].t_fin_carga = Date.now(); 
+        patio[idx].tienda = tiendaFinal; 
+        
+        registrarAuditoria(patio[idx].user, patio[idx].nom, "DESPACHO", `Carga Finalizada en Rampa ${r} para ${tiendaFinal}`, patio[idx].idCiclo);
+        await guardar();
+        renderDespacho();
+    });
 }
 
-// ---> NUEVO: Función auxiliar para reproducir sonido y vibrar <---
 function reproducirAlerta() {
     try {
         const audio = new Audio('alerta.mp3');
@@ -705,20 +789,15 @@ function cargarInfoChofer() {
     document.getElementById("infoChoferNombre").innerText = usuarioLogueado.nom;
     const infoDiv = document.getElementById("infoChofer"), accionDiv = document.getElementById("accionChofer");
 
-    // ---> INICIO LÓGICA DE ALARMA <---
     let estadoActual = vehiculo ? vehiculo.estado : "FUERA";
     
-    // Comprueba si el estado guardado es distinto al estado actual
     if (estadoChoferAnterior !== null && estadoChoferAnterior !== estadoActual) {
-        // Si el nuevo estado es "Asignado a rampa" o "Carga lista para salir", suena y vibra
         if (estadoActual === "ASIGNADO" || estadoActual === "CARGA_LISTA") {
             reproducirAlerta(); 
         }
     }
     
-    // Actualiza la memoria con el estado actual para la próxima vez
     estadoChoferAnterior = estadoActual;
-    // ---> FIN LÓGICA DE ALARMA <---
 
     if (!vehiculo) {
         infoDiv.innerHTML = '<span class="text-slate-500 text-base font-bold">Fuera de Recinto / En Tienda</span>';
@@ -734,7 +813,13 @@ function cargarInfoChofer() {
         case "EN_RAMPA":
             infoDiv.innerHTML = `<span class="text-emerald-400">EN RAMPA ${vehiculo.rampa}</span>`; accionDiv.innerHTML = '<p class="text-xs text-slate-500 mt-4">Proceso de carga en curso...</p>'; break;
         case "CARGA_LISTA":
-            infoDiv.innerHTML = `<span class="text-purple-400 animate-pulse">¡CARGA LISTA!</span>`; accionDiv.innerHTML = `<div class="text-center space-y-4"><p class="text-lg text-slate-200">Su carga en <b class="text-purple-400 text-2xl">Rampa ${vehiculo.rampa}</b> finalizó.</p><button onclick="choferConfirmaCarga()" class="w-full bg-purple-500 hover:bg-purple-400 text-white font-black py-4 rounded-2xl text-lg uppercase shadow-xl active:scale-95 transition-transform border-none">Confirmar Salida</button></div>`; break;
+            infoDiv.innerHTML = `<span class="text-purple-400 animate-pulse">¡CARGA LISTA!</span>`; 
+            accionDiv.innerHTML = `<div class="text-center space-y-4">
+                <p class="text-lg text-slate-200">Su carga en <b class="text-purple-400 text-2xl">Rampa ${vehiculo.rampa}</b> finalizó.</p>
+                <p class="text-base text-slate-300">Destino: <b class="text-white">${vehiculo.tienda || 'No especificado'}</b></p>
+                <button onclick="choferConfirmaCarga()" class="w-full bg-purple-500 hover:bg-purple-400 text-white font-black py-4 rounded-2xl text-lg uppercase shadow-xl active:scale-95 transition-transform border-none">Confirmar Salida</button>
+            </div>`; 
+            break;
         case "CARGADO":
             infoDiv.innerHTML = `<span class="text-orange-400">CARGADO</span>`; accionDiv.innerHTML = '<p class="text-xs text-slate-400 mt-4">Diríjase a la garita para registrar su salida.</p>'; break;
     }
@@ -768,12 +853,13 @@ async function choferConfirmaCarga() {
 }
 
 document.addEventListener('DOMContentLoaded', async () => { actualizarReloj(); await cargar(false); });
-// main.js o dentro de un <script> en tu HTML
+
+// CÁMBIALO PARA QUE SE VEA ASÍ:
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/service-worker.js')
+    navigator.serviceWorker.register('./service-worker.js') // <-- Aquí puse el punto
       .then(registration => {
-        console.log('ServiceWorker registrado con éxito con el scope: ', registration.scope);
+        console.log('ServiceWorker registrado con éxito');
       }, err => {
         console.log('El registro del ServiceWorker falló: ', err);
       });
