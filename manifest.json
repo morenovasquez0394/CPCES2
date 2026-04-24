@@ -1,19 +1,20 @@
 {
-  "name": "CPCES App Chofer",
-  "short_name": "Choferes",
-  "description": "Aplicación de gestión de viajes para choferes de CPCES",
-  "start_url": "/chofer", 
+  "name": "CP CES - Control Logístico de Patio",
+  "short_name": "CP CES",
+  "description": "Sistema de gestión logística, garita, patio y despacho.",
+  "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#0056b3", 
+  "background_color": "#020617",
+  "theme_color": "#020617",
+  "orientation": "portrait",
   "icons": [
     {
-      "src": "/ruta/a/tus/iconos/icon-192x192.png",
+      "src": "./icon-192.png",
       "sizes": "192x192",
       "type": "image/png"
     },
     {
-      "src": "/ruta/a/tus/iconos/icon-512x512.png",
+      "src": "./icon-512.png",
       "sizes": "512x512",
       "type": "image/png"
     }
