@@ -92,7 +92,9 @@ async function cargar(silencioso = false) {
             Object.keys(TIPOS_CAMION).forEach(k => selAdmin.add(new Option(TIPOS_CAMION[k], k)));
         }
 
-    } catch (error) { console.error("Error al cargar:", error); } 
+    } catch (error) { 
+        console.error("Error al cargar:", error); 
+    } 
     finally { if (!silencioso) setUILoading(false); }
 }
 
@@ -151,6 +153,12 @@ function calcularDiferenciaMinutos(inicio, fin) {
 }
 
 function intentarLogin() {
+    // Si los datos aún no llegan del servidor, avisamos pero NO bloqueamos el botón
+    if (usuarios.length === 0) {
+        document.getElementById("loginError").innerText = "⏳ Sincronizando datos, espere unos segundos y vuelva a intentar";
+        return;
+    }
+
     const u = document.getElementById("loginUser").value.trim();
     const p = document.getElementById("loginPass").value.trim();
     const user = usuarios.find(x => x.cod === u);
@@ -853,7 +861,10 @@ async function choferConfirmaCarga() {
     cargarInfoChofer(); 
 }
 
-document.addEventListener('DOMContentLoaded', async () => { actualizarReloj(); await cargar(false); });
+document.addEventListener('DOMContentLoaded', async () => { 
+    actualizarReloj(); 
+    await cargar(true); 
+});
 
 // CÁMBIALO PARA QUE SE VEA ASÍ:
 if ('serviceWorker' in navigator) {
