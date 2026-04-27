@@ -1,9 +1,7 @@
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <!-- Enlace al Manifest -->
-    <!-- CÁMBIALAS PARA QUE SE VEAN EXACTAMENTE ASÍ: -->
 <link rel="manifest" href="./manifest.json">
 <link rel="apple-touch-icon" href="./icon-192.png">
 
@@ -46,7 +44,7 @@
             <div id="loginForm" class="flex flex-col gap-4">
                 <input id="loginUser" class="p-4 bg-slate-900/80 rounded-2xl outline-none border border-slate-700 focus:border-blue-500 transition-all text-center font-bold" placeholder="Usuario / Ficha" onkeydown="if(event.key==='Enter') document.getElementById('loginPass').focus()">
                 <input id="loginPass" type="password" class="p-4 bg-slate-900/80 rounded-2xl outline-none border border-slate-700 focus:border-blue-500 transition-all text-center font-bold text-xs" placeholder="Clave de acceso" onkeydown="if(event.key==='Enter') intentarLogin()">
-                <button onclick="intentarLogin()" class="bg-blue-600 hover:bg-blue-500 p-4 rounded-2xl font-black shadow-xl shadow-blue-900/40 transition-all active:scale-95 uppercase tracking-widest mt-2">Ingresar</button>
+                <button id="btnLogin" onclick="intentarLogin()" class="bg-blue-600 hover:bg-blue-500 p-4 rounded-2xl font-black shadow-xl shadow-blue-900/40 transition-all active:scale-95 uppercase tracking-widest mt-2">Ingresar</button>
                 <p id="loginError" class="text-red-500 text-[10px] mt-2 font-bold uppercase"></p>
             </div>
 
