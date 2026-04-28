@@ -12,10 +12,7 @@ let tiemposCiclos = [];
 let usuarioLogueado = null;
 let html5QrcodeScanner = null;
 
-// ---> Variable para recordar el estado anterior del chofer <---
 let estadoChoferAnterior = null; 
-
-// ---> NUEVO: Variable para el control de velocidad (Actualización Inteligente) <---
 let serverLastUpdate = null;
 
 // PALETA DE ESTADOS UNIVERSAL
@@ -57,23 +54,19 @@ async function guardar() {
     finally { setUILoading(false); }
 }
 
-// ---> FUNCIÓN CARGAR MODIFICADA PARA SER SÚPER RÁPIDA <---
 async function cargar(silencioso = false) {
     if (!silencioso) setUILoading(true);
     try {
-        // Armamos la URL para preguntarle a Google si hay cambios desde la última vez
         const urlFetch = serverLastUpdate ? `${SCRIPT_URL}?lastUpdate=${serverLastUpdate}` : SCRIPT_URL;
         
         const response = await fetch(urlFetch);
         if (!response.ok) throw new Error("Error red");
         const data = await response.json();
         
-        // Si Google responde que no hay cambios, nos detenemos aquí. Ahorramos tiempo y datos.
         if (data.changed === false) {
             return;
         }
         
-        // Si hubo cambios, actualizamos nuestro sello de tiempo interno
         if (data.lastUpdate) {
             serverLastUpdate = data.lastUpdate;
         }
@@ -86,7 +79,6 @@ async function cargar(silencioso = false) {
         auditoria = data.auditoria || [];
         tiemposCiclos = data.tiemposCiclos || [];
 
-        // Llenar el select del Admin con los camiones unificados
         const selAdmin = document.getElementById('regTipoCamion');
         if (selAdmin && selAdmin.options.length === 0) {
             Object.keys(TIPOS_CAMION).forEach(k => selAdmin.add(new Option(TIPOS_CAMION[k], k)));
@@ -153,7 +145,6 @@ function calcularDiferenciaMinutos(inicio, fin) {
 }
 
 function intentarLogin() {
-    // Si los datos aún no llegan del servidor, avisamos pero NO bloqueamos el botón
     if (usuarios.length === 0) {
         document.getElementById("loginError").innerText = "⏳ Sincronizando datos, espere unos segundos y vuelva a intentar";
         return;
@@ -179,6 +170,10 @@ function intentarLogin() {
 }
 
 function entrarAlSistema() {
+    // PUNTO 4: Guardar sesión
+    localStorage.setItem('cpces_user', JSON.stringify(usuarioLogueado));
+    localStorage.setItem('cpces_modulo', 'menu');
+    
     loginScreen.classList.add("hidden");
     menuPrincipal.classList.remove("hidden");
     document.getElementById("welcomeMsg").innerText = `OPERADOR: ${usuarioLogueado.nom} | ROL: ${usuarioLogueado.rol}`;
@@ -209,6 +204,9 @@ async function guardarNuevaPass() {
 }
 
 function abrirModulo(m) {
+    // PUNTO 4: Recordar módulo actual
+    localStorage.setItem('cpces_modulo', m);
+    
     menuPrincipal.classList.add("hidden");
     app.classList.remove("hidden");
     document.querySelectorAll("#app > div.flex-1 > div").forEach(x => x.classList.add("hidden"));
@@ -224,8 +222,18 @@ function abrirModulo(m) {
     if (m === 'despacho') renderDespacho();
     if (m === 'chofer') cargarInfoChofer();
 }
-function volverMenu() { app.classList.add("hidden"); menuPrincipal.classList.remove("hidden"); }
-function cerrarSesion() { location.reload(); }
+
+function volverMenu() { 
+    localStorage.setItem('cpces_modulo', 'menu');
+    app.classList.add("hidden"); 
+    menuPrincipal.classList.remove("hidden"); 
+}
+
+function cerrarSesion() { 
+    localStorage.removeItem('cpces_user');
+    localStorage.removeItem('cpces_modulo');
+    location.reload(); 
+}
 
 function switchAdminTab(tab) {
     document.getElementById("adminFormSection").classList.toggle("hidden", tab !== 'form');
@@ -437,7 +445,10 @@ function renderStatsGarita() {
 
     historialEntradas.forEach(op => {
         if (op.fecha && op.fecha.includes(hoy.split('/')[0])) {
-            const tipo = Object.keys(TIPOS_CAMION).includes(op.tipo) ? op.tipo : 'RIGIDO';
+            // PUNTO 1: Normalizar para garita
+            const tipoNorm = (op.tipo || 'RIGIDO').replace(/ /g, '_').toUpperCase();
+            const tipo = Object.keys(TIPOS_CAMION).includes(tipoNorm) ? tipoNorm : 'RIGIDO';
+            
             if (op.estado === 'EN_PATIO') {
                 entradas[tipo]++;
                 entradas.total++;
@@ -486,8 +497,11 @@ function renderStatsPatio() {
     let stats = { PATIO: {}, RAMPA: {}, CARGADO: {}, VIAJES: {}, TOTALES: { patio: 0, rampa: 0, cargado: 0, viajes: 0, total: 0 } };
     Object.keys(TIPOS_CAMION).forEach(t => { stats.PATIO[t]=0; stats.RAMPA[t]=0; stats.CARGADO[t]=0; stats.VIAJES[t]=0; });
 
+    // PUNTO 1: Arreglo del tipo de camión
     patio.forEach(p => {
-        const t = Object.keys(TIPOS_CAMION).includes(p.tipo) ? p.tipo : 'RIGIDO';
+        let tipoNorm = (p.tipo || 'RIGIDO').replace(/ /g, '_').toUpperCase();
+        const t = Object.keys(TIPOS_CAMION).includes(tipoNorm) ? tipoNorm : 'RIGIDO';
+        
         if (p.estado === 'EN_PATIO' || p.estado === 'ASIGNADO') { stats.PATIO[t]++; stats.TOTALES.patio++; }
         else if (p.estado === 'EN_RAMPA' || p.estado === 'CARGA_LISTA') { stats.RAMPA[t]++; stats.TOTALES.rampa++; }
         else if (p.estado === 'CARGADO') { stats.CARGADO[t]++; stats.TOTALES.cargado++; }
@@ -496,7 +510,8 @@ function renderStatsPatio() {
     const hoy = formatoFechaHora().fecha;
     historialEntradas.forEach(h => {
         if (h.fecha && h.fecha.includes(hoy.split('/')[0]) && h.estado === 'ENVIADO_A_TIENDA') {
-            const t = Object.keys(TIPOS_CAMION).includes(h.tipo) ? h.tipo : 'RIGIDO';
+            let tipoNorm = (h.tipo || 'RIGIDO').replace(/ /g, '_').toUpperCase();
+            const t = Object.keys(TIPOS_CAMION).includes(tipoNorm) ? tipoNorm : 'RIGIDO';
             stats.VIAJES[t]++; stats.TOTALES.viajes++;
         }
     });
@@ -560,14 +575,21 @@ function renderPatio() {
     const filtroTipo = (document.getElementById("filtro_tipo") ? document.getElementById("filtro_tipo").value : "").toLowerCase();
     const filtroEstado = (document.getElementById("filtro_estado") ? document.getElementById("filtro_estado").value : "").toLowerCase();
     
+    // PUNTO 1: Normalización en el listado lateral
     const kpiPatioList = (estados) => {
         const f = patio.filter(p => estados.includes(p.estado));
         if (f.length === 0) return `<li class="text-slate-600 italic text-[10px]">Sin unidades</li>`;
-        const tipos = [...new Set(f.map(p => p.tipo))];
-        let html = tipos.map(t => `<li class="flex justify-between"><span class="text-slate-400 truncate mr-2">${t}</span><span class="text-white font-black">${f.filter(p => p.tipo === t).length}</span></li>`).join("");
+        const conteo = {};
+        f.forEach(p => {
+            let tipoNorm = (p.tipo || 'RIGIDO').replace(/ /g, '_').toUpperCase();
+            let t = TIPOS_CAMION[tipoNorm] ? TIPOS_CAMION[tipoNorm].replace(' ❄️', '') : (p.tipo || 'RIGIDO');
+            conteo[t] = (conteo[t] || 0) + 1;
+        });
+        let html = Object.keys(conteo).map(t => `<li class="flex justify-between"><span class="text-slate-400 truncate mr-2">${t}</span><span class="text-white font-black">${conteo[t]}</span></li>`).join("");
         html += `<li class="border-t border-slate-700 mt-1 pt-1 flex justify-between"><span class="text-slate-300">Total</span><span class="text-white font-black">${f.length}</span></li>`;
         return html;
     };
+
     document.getElementById("listaKpiPatio").innerHTML = kpiPatioList(["EN_PATIO", "ASIGNADO"]);
     document.getElementById("listaKpiRampa").innerHTML = kpiPatioList(["EN_RAMPA", "CARGA_LISTA"]);
     
@@ -629,7 +651,10 @@ function abrirSelectorModal(titulo, opciones, callback) {
     opciones.forEach(opt => {
         const btn = document.createElement('button');
         btn.className = "w-full text-left p-4 rounded-xl bg-slate-800 hover:bg-blue-600 transition-all font-bold uppercase text-[10px] tracking-widest border border-slate-700 hover:border-white/50";
-        btn.innerText = opt.label;
+        
+        // Soporte para HTML interno en el botón
+        btn.innerHTML = opt.label;
+        
         btn.onclick = () => {
             modal.classList.add('hidden');
             callback(opt.value);
@@ -649,30 +674,84 @@ async function cambiarEstadoManualmente(ficha) {
     
     abrirSelectorModal(`NUEVO ESTADO PARA ${ficha}`, opts, async (nuevoEstado) => {
         const idx = patio.findIndex(p => p.user === ficha);
-        patio[idx].estado = nuevoEstado;
-        patio[idx].lastUpdate = Date.now();
-        registrarAuditoria(ficha, patio[idx].nom, "PATIO (Manual)", `Cambió estado a ${nuevoEstado}`, patio[idx].idCiclo);
+        const vehiculo = patio[idx];
+        const estadoAnterior = vehiculo.estado;
+
+        // PUNTO 2: Lógica de afectación al sistema en cambios manuales
+        if (nuevoEstado === "ENVIADO_A_TIENDA" || nuevoEstado === "FUERA_DEL_RECINTO" || nuevoEstado === "CARGADO" || nuevoEstado === "EN_PATIO") {
+            // Liberar rampa lógicamente
+            if (vehiculo.rampa) {
+                const rIndex = rampas.findIndex(r => r.rampa_id == vehiculo.rampa);
+                if (rIndex !== -1) rampas[rIndex].status = "LIBRE";
+                vehiculo.rampa = null;
+            }
+        }
+
+        // Simular sellos de tiempo si avanza manual
+        if(nuevoEstado === "EN_RAMPA" && !vehiculo.t_llegada_rampa) vehiculo.t_llegada_rampa = Date.now();
+        if(nuevoEstado === "CARGA_LISTA" && !vehiculo.t_fin_carga) vehiculo.t_fin_carga = Date.now();
+
+        vehiculo.estado = nuevoEstado;
+        vehiculo.lastUpdate = Date.now();
+        
+        registrarAuditoria(ficha, vehiculo.nom, "PATIO (Manual)", `Cambió de ${estadoAnterior} a ${nuevoEstado}`, vehiculo.idCiclo);
         await guardar();
         renderPatio();
     });
 }
 
 async function asignarRampa(ficha) {
-    const rampasOcupadas = patio.filter(p => p.rampa && p.estado !== "ENVIADO_A_TIENDA").map(p => parseInt(p.rampa));
-    const rampasLibres = Array.from({length: 24}, (_, i) => i + 1).filter(n => !rampasOcupadas.includes(n));
+    // PUNTO 3: Listado de rampas equivalente a despacho, con estatus y prioridades
+    let opcionesRampas = [];
     
-    const opts = rampasLibres.map(n => ({ value: n, label: `RAMPA ${n}` }));
+    for (let i = 1; i <= 24; i++) {
+        let st = rampas.find(r => r.rampa_id == i)?.status || "LIBRE";
+        let u = patio.find(p => p.rampa == i && p.estado !== "ENVIADO_A_TIENDA" && p.estado !== "FUERA_DEL_RECINTO");
+        let tieneSolicitud = solicitudesDespacho.find(s => s.rampa == i);
+        
+        let labelRight = "", classRight = "", prioridad = 4;
 
-    abrirSelectorModal(`ASIGNAR RAMPA A ${ficha}`, opts, async (rNum) => {
+        if (st === "AVERIADA") {
+            labelRight = "AVERIADA"; classRight = "text-red-400"; prioridad = 4;
+        } else if (u) {
+            labelRight = u.user; classRight = "text-emerald-400 font-black"; prioridad = 3;
+        } else {
+            if (tieneSolicitud) {
+                labelRight = `SOLICITUD: ${tieneSolicitud.tipoReq}`; classRight = "text-blue-400 font-black animate-pulse"; prioridad = 1;
+            } else {
+                labelRight = "VACÍA"; classRight = "text-slate-500"; prioridad = 2;
+            }
+        }
+
+        opcionesRampas.push({
+            value: i,
+            label: `<span class="flex justify-between items-center w-full"><span>RAMPA ${i}</span><span class="text-[9px] uppercase tracking-widest ${classRight}">${labelRight}</span></span>`,
+            prioridad: prioridad
+        });
+    }
+    
+    // Ordenar para priorizar solicitudes (1), luego vacías (2), luego ocupadas (3) y averiadas (4)
+    opcionesRampas.sort((a, b) => a.prioridad - b.prioridad);
+
+    abrirSelectorModal(`ASIGNAR RAMPA A ${ficha}`, opcionesRampas, async (rNum) => {
         const idx = patio.findIndex(p => p.user === ficha);
         patio[idx].estado = "ASIGNADO"; 
         patio[idx].rampa = rNum;
         patio[idx].lastUpdate = Date.now();
         solicitudesDespacho = solicitudesDespacho.filter(s => s.rampa != rNum);
+        
+        // Marcar la rampa como ocupada lógicamente
+        const rIndex = rampas.findIndex(r => r.rampa_id == rNum);
+        if(rIndex !== -1) rampas[rIndex].status = "OCUPADA";
+        else rampas.push({rampa_id: rNum, status: "OCUPADA"});
+
         registrarAuditoria(ficha, patio[idx].nom, "PATIO", `Asignado a Rampa ${rNum}`, patio[idx].idCiclo);
         
-        document.getElementById("driverMsg").innerText = `Notificación enviada al chofer de la unidad ${ficha}.`;
-        document.getElementById("driverAlert").classList.remove("hidden");
+        const driverAlert = document.getElementById("driverAlert");
+        if(driverAlert) {
+            document.getElementById("driverMsg").innerText = `Notificación enviada al chofer de la unidad ${ficha}.`;
+            driverAlert.classList.remove("hidden");
+        }
         
         await guardar();
         renderPatio();
@@ -718,6 +797,7 @@ function renderDespacho() {
 async function setSt(i, s) {
     const rampaIndex = rampas.findIndex(r => r.rampa_id == i);
     if(rampaIndex !== -1) rampas[rampaIndex].status = s;
+    else rampas.push({rampa_id: i, status: s});
     
     if (s === "SOLICITUD") {
         const tipoReq = prompt("¿Qué tipo de camión necesita? (Ej: Contenedor)", "");
@@ -746,6 +826,7 @@ async function reasignarRampa(ficha, rampaActual) {
         if(oldR !== -1) rampas[oldR].status = "LIBRE";
         const newR = rampas.findIndex(r => r.rampa_id == n);
         if(newR !== -1) rampas[newR].status = "OCUPADA";
+        else rampas.push({rampa_id: n, status: "OCUPADA"});
 
         registrarAuditoria(ficha, patio[pIdx].nom, "DESPACHO", `Movido de Rampa ${rampaActual} a ${n}`, patio[pIdx].idCiclo);
         await guardar();
@@ -757,18 +838,17 @@ async function finalizarCarga(r) {
     const idx = patio.findIndex(p => p.rampa == r && p.estado !== "ENVIADO_A_TIENDA");
     if (idx === -1) return;
 
-    const tiendas = ["TIENDA CENTRAL", "TIENDA NORTE", "TIENDA SUR", "TIENDA ESTE", "OTRA (ESCRIBIR)"];
+    // PUNTO 5: Lista estricta de tiendas
+    const tiendas = [
+        "1100-WC", "1200-SV", "1300-SI", "1400-EN", "1500-ST", "1600-NC", 
+        "1700-RC", "1800-IN", "1900-ES", "2000-LA", "2100-P27", "2200-BN", 
+        "2300-PRO", "2400-OZ", "2500-VM", "2700-LUP", "2800-CHA", "2900-HIP", 
+        "3000-PON", "3200-JM", "3300-LV", "3400-CRO", "3500-SC", "3600-NAC", 
+        "3900-SFM", "4100-PC", "4200-YA", "4500-HIG"
+    ];
     const opts = tiendas.map(t => ({ value: t, label: t }));
 
-    abrirSelectorModal(`DESTINO PARA RAMPA ${r}`, opts, async (tiendaElegida) => {
-        let tiendaFinal = tiendaElegida;
-        
-        if (tiendaElegida === "OTRA (ESCRIBIR)") {
-            const manual = prompt("Escriba el nombre de la tienda destino:");
-            if (!manual) return; 
-            tiendaFinal = manual.toUpperCase();
-        }
-
+    abrirSelectorModal(`DESTINO PARA RAMPA ${r}`, opts, async (tiendaFinal) => {
         patio[idx].estado = "CARGA_LISTA";
         patio[idx].t_fin_carga = Date.now(); 
         patio[idx].tienda = tiendaFinal; 
@@ -863,13 +943,35 @@ async function choferConfirmaCarga() {
 
 document.addEventListener('DOMContentLoaded', async () => { 
     actualizarReloj(); 
+    
+    // PUNTO 4: Revisar si hay una sesión activa guardada
+    const savedUser = localStorage.getItem('cpces_user');
+    const savedModule = localStorage.getItem('cpces_modulo');
+    
+    if (savedUser) {
+        usuarioLogueado = JSON.parse(savedUser);
+        document.getElementById("loginScreen").classList.add("hidden");
+        
+        // Si no estaba dentro de un módulo, lo mandamos al menú
+        if (!savedModule || savedModule === 'menu') {
+            document.getElementById("menuPrincipal").classList.remove("hidden");
+            document.getElementById("welcomeMsg").innerText = `OPERADOR: ${usuarioLogueado.nom} | ROL: ${usuarioLogueado.rol}`;
+            filtrarMenu(usuarioLogueado.rol);
+        }
+    }
+    
+    // Cargamos los datos
     await cargar(true); 
+    
+    // Si estaba logueado y dentro de un módulo, lo re-abrimos
+    if (usuarioLogueado && savedModule && savedModule !== 'menu') {
+        abrirModulo(savedModule);
+    }
 });
 
-// CÁMBIALO PARA QUE SE VEA ASÍ:
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./service-worker.js') // <-- Aquí puse el punto
+    navigator.serviceWorker.register('./service-worker.js')
       .then(registration => {
         console.log('ServiceWorker registrado con éxito');
       }, err => {
