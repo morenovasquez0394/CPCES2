@@ -9,13 +9,33 @@ let solicitudesDespacho = [];
 let rampas = []; 
 let auditoria = []; 
 let tiemposCiclos = []; 
+let configuracion = []; // <-- NUEVA VARIABLE DE CONFIGURACIÓN
+
 let usuarioLogueado = null;
 let html5QrcodeScanner = null;
-
 let estadoChoferAnterior = null; 
 let serverLastUpdate = null;
 
-// PALETA DE ESTADOS UNIVERSAL
+// ==========================================
+// VARIABLES DINÁMICAS (AJUSTES DEL SISTEMA)
+// ==========================================
+let TOTAL_RAMPAS = 24; 
+let TIENDAS_LIST = [
+    "1100-WC", "1200-SV", "1300-SI", "1400-EN", "1500-ST", "1600-NC", 
+    "1700-RC", "1800-IN", "1900-ES", "2000-LA", "2100-P27", "2200-BN", 
+    "2300-PRO", "2400-OZ", "2500-VM", "2700-LUP", "2800-CHA", "2900-HIP", 
+    "3000-PON", "3200-JM", "3300-LV", "3400-CRO", "3500-SC", "3600-NAC", 
+    "3900-SFM", "4100-PC", "4200-YA", "4500-HIG"
+];
+let TIPOS_CAMION = {
+    'CAMION_FRIO': 'CAMION FRIO ❄️',
+    'CAMION_SECO': 'CAMION SECO',
+    'DOLLY': 'DOLLY',
+    'FURGON_REF': 'FURGON REF ❄️',
+    'FURGON_SECO': 'FURGON SECO',
+    'RIGIDO': 'RIGIDO'
+};
+
 const ESTADOS_UI = {
     "EN_PATIO": { label: "En Patio", class: "bg-blue-900/40 text-blue-400 border-blue-500", text: "text-blue-400" },
     "ASIGNADO": { label: "Asignado", class: "bg-yellow-900/40 text-yellow-400 border-yellow-500 animate-pulse", text: "text-yellow-400" },
@@ -26,16 +46,6 @@ const ESTADOS_UI = {
     "FUERA_DEL_RECINTO": { label: "Abortado", class: "bg-red-900/40 text-red-400 border-red-500", text: "text-red-400" }
 };
 
-// CONSTANTES DE TIPOS DE CAMION
-const TIPOS_CAMION = {
-    'CAMION_FRIO': 'CAMION FRIO ❄️',
-    'CAMION_SECO': 'CAMION SECO',
-    'DOLLY': 'DOLLY',
-    'FURGON_REF': 'FURGON REF ❄️',
-    'FURGON_SECO': 'FURGON SECO',
-    'RIGIDO': 'RIGIDO'
-};
-
 function setUILoading(isLoading) {
     document.body.style.pointerEvents = isLoading ? 'none' : 'auto';
     document.body.style.opacity = isLoading ? '0.7' : '1';
@@ -44,7 +54,7 @@ function setUILoading(isLoading) {
 async function guardar() {
     setUILoading(true);
     try {
-        const dataPayload = { usuarios, patio, historialEntradas, solicitudesDespacho, rampas, auditoria, tiemposCiclos };
+        const dataPayload = { usuarios, patio, historialEntradas, solicitudesDespacho, rampas, auditoria, tiemposCiclos, configuracion };
         await fetch(SCRIPT_URL, {
             method: 'POST', mode: 'cors', credentials: 'omit',
             headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -63,13 +73,8 @@ async function cargar(silencioso = false) {
         if (!response.ok) throw new Error("Error red");
         const data = await response.json();
         
-        if (data.changed === false) {
-            return;
-        }
-        
-        if (data.lastUpdate) {
-            serverLastUpdate = data.lastUpdate;
-        }
+        if (data.changed === false) return;
+        if (data.lastUpdate) serverLastUpdate = data.lastUpdate;
         
         usuarios = data.usuarios || [];
         patio = data.patio || [];
@@ -78,9 +83,34 @@ async function cargar(silencioso = false) {
         rampas = data.rampas || [];
         auditoria = data.auditoria || [];
         tiemposCiclos = data.tiemposCiclos || [];
+        configuracion = data.configuracion || [];
 
+        // --- LECTURA DE AJUSTES DINÁMICOS ---
+        const cfgRampas = configuracion.find(c => c.clave === 'RAMPAS');
+        if (cfgRampas && cfgRampas.valor) TOTAL_RAMPAS = parseInt(cfgRampas.valor);
+
+        const cfgTiendas = configuracion.find(c => c.clave === 'TIENDAS');
+        if (cfgTiendas && cfgTiendas.valor) TIENDAS_LIST = cfgTiendas.valor.split('\n').map(t => t.trim()).filter(t => t);
+
+        const cfgCamiones = configuracion.find(c => c.clave === 'CAMIONES');
+        if (cfgCamiones && cfgCamiones.valor) {
+            let nuevosCamiones = {};
+            cfgCamiones.valor.split('\n').forEach(l => {
+                let p = l.split(',');
+                if(p.length >= 2) nuevosCamiones[p[0].trim()] = p[1].trim();
+            });
+            if(Object.keys(nuevosCamiones).length > 0) TIPOS_CAMION = nuevosCamiones;
+        }
+
+        // Llenar campos de configuración en UI
+        if(document.getElementById("configRampas")) document.getElementById("configRampas").value = TOTAL_RAMPAS;
+        if(document.getElementById("configTiendas")) document.getElementById("configTiendas").value = TIENDAS_LIST.join('\n');
+        if(document.getElementById("configCamiones")) document.getElementById("configCamiones").value = Object.keys(TIPOS_CAMION).map(k => `${k},${TIPOS_CAMION[k]}`).join('\n');
+
+        // Llenar select de camiones en registro de usuarios (forzar recarga)
         const selAdmin = document.getElementById('regTipoCamion');
-        if (selAdmin && selAdmin.options.length === 0) {
+        if (selAdmin) {
+            selAdmin.innerHTML = '';
             Object.keys(TIPOS_CAMION).forEach(k => selAdmin.add(new Option(TIPOS_CAMION[k], k)));
         }
 
@@ -88,6 +118,32 @@ async function cargar(silencioso = false) {
         console.error("Error al cargar:", error); 
     } 
     finally { if (!silencioso) setUILoading(false); }
+}
+
+// ==========================================
+// FUNCIÓN PARA GUARDAR AJUSTES (NUEVA)
+// ==========================================
+async function guardarAjustesSistema() {
+    if(!confirm("¿Estás seguro de modificar la estructura del sistema?")) return;
+
+    const valRampas = document.getElementById("configRampas").value;
+    const valTiendas = document.getElementById("configTiendas").value;
+    const valCamiones = document.getElementById("configCamiones").value;
+
+    configuracion = [
+        { clave: 'RAMPAS', valor: valRampas },
+        { clave: 'TIENDAS', valor: valTiendas },
+        { clave: 'CAMIONES', valor: valCamiones }
+    ];
+
+    registrarAuditoria("SISTEMA", "ADMIN", "CONFIGURACIÓN", "Se modificaron parámetros del núcleo");
+
+    await guardar();
+    
+    // Forzamos actualización local visual
+    await cargar(false);
+    alert("✅ SISTEMA ACTUALIZADO CORRECTAMENTE");
+    if (!document.getElementById("despacho").classList.contains("hidden")) renderDespacho();
 }
 
 function formatoFechaHora() {
@@ -103,10 +159,8 @@ function formatoFechaHora() {
 
 function actualizarReloj() {
     const fh = formatoFechaHora();
-    const relojEl = document.getElementById("reloj");
-    const fechaEl = document.getElementById("fechaLarga");
-    if (relojEl) relojEl.innerText = fh.hora;
-    if (fechaEl) fechaEl.innerText = fh.fecha;
+    if (document.getElementById("reloj")) document.getElementById("reloj").innerText = fh.hora;
+    if (document.getElementById("fechaLarga")) document.getElementById("fechaLarga").innerText = fh.fecha;
 }
 setInterval(actualizarReloj, 1000);
 
@@ -149,7 +203,6 @@ function intentarLogin() {
         document.getElementById("loginError").innerText = "⏳ Sincronizando datos, espere unos segundos y vuelva a intentar";
         return;
     }
-
     const u = document.getElementById("loginUser").value.trim();
     const p = document.getElementById("loginPass").value.trim();
     const user = usuarios.find(x => x.cod === u);
@@ -170,10 +223,8 @@ function intentarLogin() {
 }
 
 function entrarAlSistema() {
-    // PUNTO 4: Guardar sesión
     localStorage.setItem('cpces_user', JSON.stringify(usuarioLogueado));
     localStorage.setItem('cpces_modulo', 'menu');
-    
     loginScreen.classList.add("hidden");
     menuPrincipal.classList.remove("hidden");
     document.getElementById("welcomeMsg").innerText = `OPERADOR: ${usuarioLogueado.nom} | ROL: ${usuarioLogueado.rol}`;
@@ -204,16 +255,13 @@ async function guardarNuevaPass() {
 }
 
 function abrirModulo(m) {
-    // PUNTO 4: Recordar módulo actual
     localStorage.setItem('cpces_modulo', m);
-    
     menuPrincipal.classList.add("hidden");
     app.classList.remove("hidden");
     document.querySelectorAll("#app > div.flex-1 > div").forEach(x => x.classList.add("hidden"));
     document.getElementById(m).classList.remove("hidden");
     document.getElementById("tituloModulo").innerText = m.toUpperCase();
     actualizarReloj();
-    
     document.getElementById("headerStats").innerHTML = "";
     
     if (m === 'admin') { actualizarListaUsuarios(); renderAuditoria(); }
@@ -238,8 +286,15 @@ function cerrarSesion() {
 function switchAdminTab(tab) {
     document.getElementById("adminFormSection").classList.toggle("hidden", tab !== 'form');
     document.getElementById("adminAuditSection").classList.toggle("hidden", tab !== 'audit');
-    document.getElementById("btnTabForm").className = tab === 'form' ? "bg-blue-600 px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all" : "bg-slate-800 text-slate-400 px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-700 transition-all";
-    document.getElementById("btnTabAudit").className = tab === 'audit' ? "bg-blue-600 px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all" : "bg-slate-800 text-slate-400 px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-700 transition-all";
+    document.getElementById("adminConfigSection").classList.toggle("hidden", tab !== 'config'); // <-- MUESTRA NUEVA SECCIÓN
+    
+    // Modificar estilos de pestañas activas
+    const activeClass = "bg-blue-600 px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap flex items-center gap-2";
+    const inactiveClass = "bg-slate-800 text-slate-400 px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-700 transition-all whitespace-nowrap flex items-center gap-2";
+    
+    document.getElementById("btnTabForm").className = tab === 'form' ? activeClass : inactiveClass;
+    document.getElementById("btnTabAudit").className = tab === 'audit' ? activeClass : inactiveClass;
+    document.getElementById("btnTabConfig").className = tab === 'config' ? activeClass : inactiveClass;
 }
 
 function ajustarFormularioAdmin() {
@@ -438,14 +493,12 @@ function renderStatsGarita() {
     if (!container || document.getElementById("garita").classList.contains("hidden")) return;
 
     const hoy = formatoFechaHora().fecha;
-    
     let entradas = { total: 0 };
     let salidas = { total: 0 };
     Object.keys(TIPOS_CAMION).forEach(t => { entradas[t] = 0; salidas[t] = 0; });
 
     historialEntradas.forEach(op => {
         if (op.fecha && op.fecha.includes(hoy.split('/')[0])) {
-            // PUNTO 1: Normalizar para garita
             const tipoNorm = (op.tipo || 'RIGIDO').replace(/ /g, '_').toUpperCase();
             const tipo = Object.keys(TIPOS_CAMION).includes(tipoNorm) ? tipoNorm : 'RIGIDO';
             
@@ -497,7 +550,6 @@ function renderStatsPatio() {
     let stats = { PATIO: {}, RAMPA: {}, CARGADO: {}, VIAJES: {}, TOTALES: { patio: 0, rampa: 0, cargado: 0, viajes: 0, total: 0 } };
     Object.keys(TIPOS_CAMION).forEach(t => { stats.PATIO[t]=0; stats.RAMPA[t]=0; stats.CARGADO[t]=0; stats.VIAJES[t]=0; });
 
-    // PUNTO 1: Arreglo del tipo de camión
     patio.forEach(p => {
         let tipoNorm = (p.tipo || 'RIGIDO').replace(/ /g, '_').toUpperCase();
         const t = Object.keys(TIPOS_CAMION).includes(tipoNorm) ? tipoNorm : 'RIGIDO';
@@ -575,7 +627,6 @@ function renderPatio() {
     const filtroTipo = (document.getElementById("filtro_tipo") ? document.getElementById("filtro_tipo").value : "").toLowerCase();
     const filtroEstado = (document.getElementById("filtro_estado") ? document.getElementById("filtro_estado").value : "").toLowerCase();
     
-    // PUNTO 1: Normalización en el listado lateral
     const kpiPatioList = (estados) => {
         const f = patio.filter(p => estados.includes(p.estado));
         if (f.length === 0) return `<li class="text-slate-600 italic text-[10px]">Sin unidades</li>`;
@@ -651,10 +702,7 @@ function abrirSelectorModal(titulo, opciones, callback) {
     opciones.forEach(opt => {
         const btn = document.createElement('button');
         btn.className = "w-full text-left p-4 rounded-xl bg-slate-800 hover:bg-blue-600 transition-all font-bold uppercase text-[10px] tracking-widest border border-slate-700 hover:border-white/50";
-        
-        // Soporte para HTML interno en el botón
         btn.innerHTML = opt.label;
-        
         btn.onclick = () => {
             modal.classList.add('hidden');
             callback(opt.value);
@@ -677,9 +725,7 @@ async function cambiarEstadoManualmente(ficha) {
         const vehiculo = patio[idx];
         const estadoAnterior = vehiculo.estado;
 
-        // PUNTO 2: Lógica de afectación al sistema en cambios manuales
         if (nuevoEstado === "ENVIADO_A_TIENDA" || nuevoEstado === "FUERA_DEL_RECINTO" || nuevoEstado === "CARGADO" || nuevoEstado === "EN_PATIO") {
-            // Liberar rampa lógicamente
             if (vehiculo.rampa) {
                 const rIndex = rampas.findIndex(r => r.rampa_id == vehiculo.rampa);
                 if (rIndex !== -1) rampas[rIndex].status = "LIBRE";
@@ -687,7 +733,6 @@ async function cambiarEstadoManualmente(ficha) {
             }
         }
 
-        // Simular sellos de tiempo si avanza manual
         if(nuevoEstado === "EN_RAMPA" && !vehiculo.t_llegada_rampa) vehiculo.t_llegada_rampa = Date.now();
         if(nuevoEstado === "CARGA_LISTA" && !vehiculo.t_fin_carga) vehiculo.t_fin_carga = Date.now();
 
@@ -701,10 +746,10 @@ async function cambiarEstadoManualmente(ficha) {
 }
 
 async function asignarRampa(ficha) {
-    // PUNTO 3: Listado de rampas equivalente a despacho, con estatus y prioridades
     let opcionesRampas = [];
     
-    for (let i = 1; i <= 24; i++) {
+    // --> AHORA LEE LA CANTIDAD DE RAMPAS DINÁMICAMENTE <--
+    for (let i = 1; i <= TOTAL_RAMPAS; i++) {
         let st = rampas.find(r => r.rampa_id == i)?.status || "LIBRE";
         let u = patio.find(p => p.rampa == i && p.estado !== "ENVIADO_A_TIENDA" && p.estado !== "FUERA_DEL_RECINTO");
         let tieneSolicitud = solicitudesDespacho.find(s => s.rampa == i);
@@ -730,7 +775,6 @@ async function asignarRampa(ficha) {
         });
     }
     
-    // Ordenar para priorizar solicitudes (1), luego vacías (2), luego ocupadas (3) y averiadas (4)
     opcionesRampas.sort((a, b) => a.prioridad - b.prioridad);
 
     abrirSelectorModal(`ASIGNAR RAMPA A ${ficha}`, opcionesRampas, async (rNum) => {
@@ -740,7 +784,6 @@ async function asignarRampa(ficha) {
         patio[idx].lastUpdate = Date.now();
         solicitudesDespacho = solicitudesDespacho.filter(s => s.rampa != rNum);
         
-        // Marcar la rampa como ocupada lógicamente
         const rIndex = rampas.findIndex(r => r.rampa_id == rNum);
         if(rIndex !== -1) rampas[rIndex].status = "OCUPADA";
         else rampas.push({rampa_id: rNum, status: "OCUPADA"});
@@ -761,7 +804,9 @@ async function asignarRampa(ficha) {
 function renderDespacho() {
     const grid = document.getElementById("gridDespacho");
     grid.innerHTML = "";
-    for (let i = 1; i <= 24; i++) {
+    
+    // --> AHORA DIBUJA EXACTAMENTE LA CANTIDAD DE RAMPAS INDICADAS <--
+    for (let i = 1; i <= TOTAL_RAMPAS; i++) {
         const u = patio.find(p => p.rampa == i && p.estado !== "ENVIADO_A_TIENDA" && p.estado !== "FUERA_DEL_RECINTO");
         const rampaObj = rampas.find(r => r.rampa_id == i);
         const st = rampaObj ? rampaObj.status : "LIBRE";
@@ -813,7 +858,8 @@ async function setSt(i, s) {
 
 async function reasignarRampa(ficha, rampaActual) {
     const rampasOcupadas = patio.filter(p => p.rampa && p.estado !== "ENVIADO_A_TIENDA").map(p => parseInt(p.rampa));
-    const rampasLibres = Array.from({length: 24}, (_, i) => i + 1).filter(n => !rampasOcupadas.includes(n));
+    // --> AHORA LEE LA CANTIDAD DE RAMPAS DINÁMICAMENTE <--
+    const rampasLibres = Array.from({length: TOTAL_RAMPAS}, (_, i) => i + 1).filter(n => !rampasOcupadas.includes(n));
     
     const opts = rampasLibres.map(n => ({ value: n, label: `RAMPA ${n}` }));
 
@@ -838,15 +884,8 @@ async function finalizarCarga(r) {
     const idx = patio.findIndex(p => p.rampa == r && p.estado !== "ENVIADO_A_TIENDA");
     if (idx === -1) return;
 
-    // PUNTO 5: Lista estricta de tiendas
-    const tiendas = [
-        "1100-WC", "1200-SV", "1300-SI", "1400-EN", "1500-ST", "1600-NC", 
-        "1700-RC", "1800-IN", "1900-ES", "2000-LA", "2100-P27", "2200-BN", 
-        "2300-PRO", "2400-OZ", "2500-VM", "2700-LUP", "2800-CHA", "2900-HIP", 
-        "3000-PON", "3200-JM", "3300-LV", "3400-CRO", "3500-SC", "3600-NAC", 
-        "3900-SFM", "4100-PC", "4200-YA", "4500-HIG"
-    ];
-    const opts = tiendas.map(t => ({ value: t, label: t }));
+    // --> AHORA LEE LA LISTA DE TIENDAS DINÁMICAMENTE <--
+    const opts = TIENDAS_LIST.map(t => ({ value: t, label: t }));
 
     abrirSelectorModal(`DESTINO PARA RAMPA ${r}`, opts, async (tiendaFinal) => {
         patio[idx].estado = "CARGA_LISTA";
@@ -944,7 +983,13 @@ async function choferConfirmaCarga() {
 document.addEventListener('DOMContentLoaded', async () => { 
     actualizarReloj(); 
     
-    // PUNTO 4: Revisar si hay una sesión activa guardada
+    const btnLogin = document.getElementById("btnLogin");
+    if(btnLogin) {
+        btnLogin.innerText = "⏳ CONECTANDO...";
+        btnLogin.disabled = true;
+        btnLogin.classList.add("opacity-50", "cursor-not-allowed");
+    }
+    
     const savedUser = localStorage.getItem('cpces_user');
     const savedModule = localStorage.getItem('cpces_modulo');
     
@@ -952,7 +997,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         usuarioLogueado = JSON.parse(savedUser);
         document.getElementById("loginScreen").classList.add("hidden");
         
-        // Si no estaba dentro de un módulo, lo mandamos al menú
         if (!savedModule || savedModule === 'menu') {
             document.getElementById("menuPrincipal").classList.remove("hidden");
             document.getElementById("welcomeMsg").innerText = `OPERADOR: ${usuarioLogueado.nom} | ROL: ${usuarioLogueado.rol}`;
@@ -960,10 +1004,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
     
-    // Cargamos los datos
     await cargar(true); 
     
-    // Si estaba logueado y dentro de un módulo, lo re-abrimos
+    if(btnLogin) {
+        btnLogin.innerText = "INGRESAR";
+        btnLogin.disabled = false;
+        btnLogin.classList.remove("opacity-50", "cursor-not-allowed");
+        document.getElementById("loginError").innerText = ""; 
+    }
+    
     if (usuarioLogueado && savedModule && savedModule !== 'menu') {
         abrirModulo(savedModule);
     }
