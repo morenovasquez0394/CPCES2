@@ -1,6 +1,6 @@
 // --- START OF FILE script.js ---
 
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxQrqzUTJjixGy2vv1JKetMApWrZbp6sivsDrSCZaQni-UybsGiCO_DJzoeV5oM3Nevvw/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzhY8yFiFjFjdcPFWHIZl_xcVzRvTlYOj1StYzeS7TaFBhKVgBkuCW252N58Vd7hQ4dsA/exec';
         
 let usuarios = [];
 let patio = [];
