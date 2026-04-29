@@ -16,25 +16,9 @@ let html5QrcodeScanner = null;
 let estadoChoferAnterior = null; 
 let serverLastUpdate = null;
 
-// ==========================================
-// VARIABLES DINÁMICAS (AJUSTES DEL SISTEMA)
-// ==========================================
 let TOTAL_RAMPAS = 24; 
-let TIENDAS_LIST = [
-    "1100-WC", "1200-SV", "1300-SI", "1400-EN", "1500-ST", "1600-NC", 
-    "1700-RC", "1800-IN", "1900-ES", "2000-LA", "2100-P27", "2200-BN", 
-    "2300-PRO", "2400-OZ", "2500-VM", "2700-LUP", "2800-CHA", "2900-HIP", 
-    "3000-PON", "3200-JM", "3300-LV", "3400-CRO", "3500-SC", "3600-NAC", 
-    "3900-SFM", "4100-PC", "4200-YA", "4500-HIG"
-];
-let TIPOS_CAMION = {
-    'CAMION_FRIO': 'CAMION FRIO ❄️',
-    'CAMION_SECO': 'CAMION SECO',
-    'DOLLY': 'DOLLY',
-    'FURGON_REF': 'FURGON REF ❄️',
-    'FURGON_SECO': 'FURGON SECO',
-    'RIGIDO': 'RIGIDO'
-};
+let TIENDAS_LIST = ["1100-WC", "1200-SV", "1300-SI", "1400-EN", "1500-ST", "1600-NC", "1700-RC", "1800-IN", "1900-ES", "2000-LA", "2100-P27", "2200-BN", "2300-PRO", "2400-OZ", "2500-VM", "2700-LUP", "2800-CHA", "2900-HIP", "3000-PON", "3200-JM", "3300-LV", "3400-CRO", "3500-SC", "3600-NAC", "3900-SFM", "4100-PC", "4200-YA", "4500-HIG"];
+let TIPOS_CAMION = {'CAMION_FRIO': 'CAMION FRIO ❄️','CAMION_SECO': 'CAMION SECO','DOLLY': 'DOLLY','FURGON_REF': 'FURGON REF ❄️','FURGON_SECO': 'FURGON SECO','RIGIDO': 'RIGIDO'};
 
 const ESTADOS_UI = {
     "EN_PATIO": { label: "En Patio", class: "bg-blue-900/40 text-blue-400 border-blue-500", text: "text-blue-400" },
@@ -177,7 +161,6 @@ function refrescarVistasActivas() {
         renderHistorialGarita(); 
         renderStatsGarita();
     }
-    if (!document.getElementById("patio").classList.contains("hidden")) renderStatsPatio();
 }
 
 function registrarAuditoria(ficha, nom, modulo, accion, idCiclo = "N/A") {
@@ -257,15 +240,16 @@ function abrirModulo(m) {
     document.getElementById(m).classList.remove("hidden");
     document.getElementById("tituloModulo").innerText = m.toUpperCase();
     actualizarReloj();
-    document.getElementById("headerStats").innerHTML = "";
+    // PUNTO 1: EL RESUMEN SUPERIOR YA NO SE DIBUJARÁ AL ABRIR NINGÚN MÓDULO
+    // document.getElementById("headerStats").innerHTML = ""; // Se comenta o elimina esta línea
     
     if (m === 'admin') { 
         switchAdminTab('form'); 
         actualizarListaUsuarios(); 
         renderAuditoria(); 
     }
-    if (m === 'garita') { renderHistorialGarita(); renderStatsGarita(); }
-    if (m === 'patio') { renderPatio(); renderStatsPatio(); }
+    if (m === 'garita') { renderHistorialGarita(); } // Ya no renderiza stats
+    if (m === 'patio') { renderPatio(); } // Ya no renderiza stats
     if (m === 'despacho') renderDespacho();
     if (m === 'chofer') cargarInfoChofer();
 }
@@ -413,7 +397,6 @@ async function validarYRegistrar() {
 
     if (vehiculoEnPatio) {
         let esSalidaValida = false;
-
         const tAhora = Date.now();
         const tEntrada = vehiculoEnPatio.timestamp;
         const tLlegadaRampa = vehiculoEnPatio.t_llegada_rampa || null;
@@ -423,12 +406,7 @@ async function validarYRegistrar() {
             vehiculoEnPatio.estado = "FUERA_DEL_RECINTO"; 
             msg.innerHTML = `<span class='text-red-500 tracking-widest'>CICLO ABORTADO: ${vehiculoEnPatio.nom.split(' ')[0]}</span>`;
             esSalidaValida = true;
-            
-            tiemposCiclos.unshift({
-                fecha: fh.fecha, ficha: ficha, ciclo: vehiculoEnPatio.idCiclo, hora_llegada: vehiculoEnPatio.hora,
-                tiempo_patio: calcularDiferenciaMinutos(tEntrada, tAhora), tiempo_rampa: "N/A", tiempo_cargado: "N/A", hora_salida: fh.hora
-            });
-
+            tiemposCiclos.unshift({ fecha: fh.fecha, ficha: ficha, ciclo: vehiculoEnPatio.idCiclo, hora_llegada: vehiculoEnPatio.hora, tiempo_patio: calcularDiferenciaMinutos(tEntrada, tAhora), tiempo_rampa: "N/A", tiempo_cargado: "N/A", hora_salida: fh.hora });
         } else if (vehiculoEnPatio.estado === "CARGADO" || vehiculoEnPatio.estado === "CARGA_LISTA") {
             if (vehiculoEnPatio.rampa) { 
                 const rampaIndex = rampas.findIndex(r => r.rampa_id == vehiculoEnPatio.rampa);
@@ -438,13 +416,7 @@ async function validarYRegistrar() {
             vehiculoEnPatio.estado = "ENVIADO_A_TIENDA"; 
             msg.innerHTML = `<span class='text-cyan-400 tracking-widest'>SALIDA OK: ${vehiculoEnPatio.nom.split(' ')[0]}</span>`;
             esSalidaValida = true;
-
-            tiemposCiclos.unshift({
-                fecha: fh.fecha, ficha: ficha, ciclo: vehiculoEnPatio.idCiclo, hora_llegada: vehiculoEnPatio.hora,
-                tiempo_patio: calcularDiferenciaMinutos(tEntrada, tLlegadaRampa), tiempo_rampa: calcularDiferenciaMinutos(tLlegadaRampa, tFinCarga),
-                tiempo_cargado: calcularDiferenciaMinutos(tFinCarga, tAhora), hora_salida: fh.hora
-            });
-
+            tiemposCiclos.unshift({ fecha: fh.fecha, ficha: ficha, ciclo: vehiculoEnPatio.idCiclo, hora_llegada: vehiculoEnPatio.hora, tiempo_patio: calcularDiferenciaMinutos(tEntrada, tLlegadaRampa), tiempo_rampa: calcularDiferenciaMinutos(tLlegadaRampa, tFinCarga), tiempo_cargado: calcularDiferenciaMinutos(tFinCarga, tAhora), hora_salida: fh.hora });
         } else {
             msg.innerHTML = `<span class='text-orange-500 tracking-tighter'>⛔ NO PUEDE SALIR: Está en proceso (${vehiculoEnPatio.estado})</span>`;
         }
@@ -466,22 +438,7 @@ async function validarYRegistrar() {
     }
     
     const nuevoIdCiclo = "CYC-" + Date.now().toString().slice(-6);
-    const entrada = {
-        idCiclo: nuevoIdCiclo,
-        user: ficha,
-        nom: usuarioInfo.nom,
-        tipo: usuarioInfo.tipoCamion || "RIGIDO",
-        hora: fh.hora,
-        fecha: fh.fecha,
-        estado: "EN_PATIO",
-        timestamp: Date.now(),
-        lastUpdate: Date.now(),
-        rampa: null,
-        tienda: null,
-        t_llegada_rampa: "", 
-        t_fin_carga: ""      
-    };
-
+    const entrada = { idCiclo: nuevoIdCiclo, user: ficha, nom: usuarioInfo.nom, tipo: usuarioInfo.tipoCamion || "RIGIDO", hora: fh.hora, fecha: fh.fecha, estado: "EN_PATIO", timestamp: Date.now(), lastUpdate: Date.now(), rampa: null, tienda: null, t_llegada_rampa: "", t_fin_carga: "" };
     patio.push(entrada);
     historialEntradas.unshift({...entrada}); 
     
@@ -491,146 +448,24 @@ async function validarYRegistrar() {
     renderHistorialGarita();
 }
 
-function renderStatsGarita() {
-    const container = document.getElementById("headerStats");
-    if (!container || document.getElementById("garita").classList.contains("hidden")) return;
-
-    const hoy = formatoFechaHora().fecha;
-    let entradas = { total: 0 };
-    let salidas = { total: 0 };
-    Object.keys(TIPOS_CAMION).forEach(t => { entradas[t] = 0; salidas[t] = 0; });
-
-    historialEntradas.forEach(op => {
-        if (op.fecha && op.fecha.includes(hoy.split('/')[0])) {
-            const tipoNorm = (op.tipo || 'RIGIDO').replace(/ /g, '_').toUpperCase();
-            const tipo = Object.keys(TIPOS_CAMION).includes(tipoNorm) ? tipoNorm : 'RIGIDO';
-            
-            if (op.estado === 'EN_PATIO') {
-                entradas[tipo]++;
-                entradas.total++;
-            } else if (op.estado === 'ENVIADO_A_TIENDA' || op.estado === 'FUERA_DEL_RECINTO') {
-                salidas[tipo]++;
-                salidas.total++;
-            }
-        }
-    });
-
-    let thCols = Object.keys(TIPOS_CAMION).map(t => `<th class="pb-1 border-l border-slate-700/50">${TIPOS_CAMION[t].replace('❄️', '')}</th>`).join('');
-    let tdEntradas = Object.keys(TIPOS_CAMION).map(t => `<td class="py-1.5 border-l border-slate-800/50 text-emerald-400/80">${entradas[t]}</td>`).join('');
-    let tdSalidas = Object.keys(TIPOS_CAMION).map(t => `<td class="py-1.5 border-l border-slate-800/50 text-cyan-400/80">${salidas[t]}</td>`).join('');
-
-    container.innerHTML = `
-        <div class="w-full overflow-x-auto bg-slate-900/50 rounded-[1rem] p-2 px-4 text-[9px] md:text-[10px] font-bold text-slate-300 uppercase tracking-widest border border-slate-700/50 shadow-inner">
-            <table class="w-full text-center min-w-[600px]">
-                <thead>
-                    <tr class="text-slate-500 border-b border-slate-700/50">
-                        <th class="pb-1 text-left italic">HOY</th>
-                        ${thCols}
-                        <th class="pb-1 text-white border-l border-slate-700/50 pl-4">TOTAL</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr class="border-b border-slate-800/50">
-                        <td class="py-1.5 text-left text-emerald-500">ENTRADAS</td>
-                        ${tdEntradas}
-                        <td class="py-1.5 font-black text-emerald-400 border-l border-slate-700/50 pl-4">${entradas.total}</td>
-                    </tr>
-                    <tr>
-                        <td class="py-1.5 text-left text-cyan-500">SALIDAS</td>
-                        ${tdSalidas}
-                        <td class="py-1.5 font-black text-cyan-400 border-l border-slate-700/50 pl-4">${salidas.total}</td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-    `;
-}
-
-function renderStatsPatio() {
-    const container = document.getElementById("headerStats");
-    if (!container || document.getElementById("patio").classList.contains("hidden")) return;
-
-    let stats = { PATIO: {}, RAMPA: {}, CARGADO: {}, VIAJES: {}, TOTALES: { patio: 0, rampa: 0, cargado: 0, viajes: 0, total: 0 } };
-    Object.keys(TIPOS_CAMION).forEach(t => { stats.PATIO[t]=0; stats.RAMPA[t]=0; stats.CARGADO[t]=0; stats.VIAJES[t]=0; });
-
-    patio.forEach(p => {
-        let tipoNorm = (p.tipo || 'RIGIDO').replace(/ /g, '_').toUpperCase();
-        const t = Object.keys(TIPOS_CAMION).includes(tipoNorm) ? tipoNorm : 'RIGIDO';
-        
-        if (p.estado === 'EN_PATIO' || p.estado === 'ASIGNADO') { stats.PATIO[t]++; stats.TOTALES.patio++; }
-        else if (p.estado === 'EN_RAMPA' || p.estado === 'CARGA_LISTA') { stats.RAMPA[t]++; stats.TOTALES.rampa++; }
-        else if (p.estado === 'CARGADO') { stats.CARGADO[t]++; stats.TOTALES.cargado++; }
-    });
-
-    const hoy = formatoFechaHora().fecha;
-    historialEntradas.forEach(h => {
-        if (h.fecha && h.fecha.includes(hoy.split('/')[0]) && h.estado === 'ENVIADO_A_TIENDA') {
-            let tipoNorm = (h.tipo || 'RIGIDO').replace(/ /g, '_').toUpperCase();
-            const t = Object.keys(TIPOS_CAMION).includes(tipoNorm) ? tipoNorm : 'RIGIDO';
-            stats.VIAJES[t]++; stats.TOTALES.viajes++;
-        }
-    });
-
-    stats.TOTALES.total = stats.TOTALES.patio + stats.TOTALES.rampa + stats.TOTALES.cargado;
-    const kpiElement = document.getElementById("kpiViajes");
-    if (kpiElement) kpiElement.innerText = stats.TOTALES.viajes;
-
-    let thCols = Object.keys(TIPOS_CAMION).map(t => `<th class="p-2 border-l border-slate-700/50">${TIPOS_CAMION[t].replace('❄️', '')}</th>`).join('');
-    
-    container.innerHTML = `
-        <div class="w-full overflow-x-auto bg-slate-900/50 rounded-[1rem] p-2 px-4 text-[9px] font-bold text-slate-300 uppercase tracking-widest border border-slate-700/50 shadow-inner">
-            <table class="w-full text-center min-w-[500px]">
-                <thead><tr class="text-slate-500 border-b border-slate-700/50"><th class="p-2 text-left italic">ESTATUS</th>${thCols}<th class="p-2 text-white border-l border-slate-700/50 pl-4">TOTAL</th></tr></thead>
-                <tbody>
-                    <tr class="border-b border-slate-800/50"><td class="p-2 text-left text-blue-500">EN PATIO</td>${Object.keys(TIPOS_CAMION).map(t => `<td class="p-2 border-l border-slate-800/50">${stats.PATIO[t]}</td>`).join('')}<td class="p-2 font-black text-blue-400 border-l border-slate-700/50 pl-4">${stats.TOTALES.patio}</td></tr>
-                    <tr class="border-b border-slate-800/50"><td class="p-2 text-left text-emerald-500">EN RAMPA</td>${Object.keys(TIPOS_CAMION).map(t => `<td class="p-2 border-l border-slate-800/50">${stats.RAMPA[t]}</td>`).join('')}<td class="p-2 font-black text-emerald-400 border-l border-slate-700/50 pl-4">${stats.TOTALES.rampa}</td></tr>
-                    <tr class="border-b border-slate-800/50"><td class="p-2 text-left text-orange-500">CARGADO</td>${Object.keys(TIPOS_CAMION).map(t => `<td class="p-2 border-l border-slate-800/50">${stats.CARGADO[t]}</td>`).join('')}<td class="p-2 font-black text-orange-400 border-l border-slate-700/50 pl-4">${stats.TOTALES.cargado}</td></tr>
-                </tbody>
-            </table>
-        </div>
-    `;
-}
-
 function renderHistorialGarita() {
     const container = document.getElementById("historialGarita");
     document.getElementById("countHistorial").innerText = historialEntradas.length + " Reg";
     container.innerHTML = historialEntradas.map(h => {
         let fechaLimpia = h.fecha;
         if (fechaLimpia && fechaLimpia.includes('T')) fechaLimpia = fechaLimpia.split('T')[0];
+        let borderColor = "", bgColor = "", textColor = "", etiqueta = "";
+        if (h.estado === 'ENVIADO_A_TIENDA') { borderColor = "border-cyan-500"; bgColor = "bg-cyan-900/10"; textColor = "text-cyan-400"; etiqueta = "SALIDA"; } 
+        else if (h.estado === 'FUERA_DEL_RECINTO') { borderColor = "border-red-500"; bgColor = "bg-red-900/10"; textColor = "text-red-400"; etiqueta = "SALIDA ABORTADA"; } 
+        else { borderColor = "border-emerald-500"; bgColor = "bg-emerald-900/10"; textColor = "text-emerald-400"; etiqueta = "ENTRADA"; }
         
-        let borderColor = ""; let bgColor = ""; let textColor = ""; let etiqueta = "";
-
-        if (h.estado === 'ENVIADO_A_TIENDA') {
-            borderColor = "border-cyan-500"; bgColor = "bg-cyan-900/10"; textColor = "text-cyan-400"; etiqueta = "SALIDA";
-        } else if (h.estado === 'FUERA_DEL_RECINTO') {
-            borderColor = "border-red-500"; bgColor = "bg-red-900/10"; textColor = "text-red-400"; etiqueta = "SALIDA ABORTADA";
-        } else {
-            borderColor = "border-emerald-500"; bgColor = "bg-emerald-900/10"; textColor = "text-emerald-400"; etiqueta = "ENTRADA";
-        }
-        
-        return `<div class="glass p-6 rounded-[2rem] flex justify-between items-center border-l-4 ${borderColor} ${bgColor} hover:bg-slate-800/40 transition-all mb-3">
-            <div>
-                <span class="text-[11px] font-black text-white tracking-tighter uppercase">${h.user} <span class="text-slate-700 mx-2">|</span> ${h.tipo}</span>
-                <div class="text-[10px] italic historial-item font-bold mt-1 uppercase tracking-tight">${h.nom} - <span class="${textColor} font-black">${etiqueta}</span></div>
-            </div>
-            <div class="text-right">
-                <div class="text-[8px] font-black text-slate-500 mb-1 tracking-widest uppercase">${fechaLimpia}</div>
-                <div class="text-sm font-black text-slate-300">${h.hora}</div>
-            </div>
-        </div>`;
+        return `<div class="glass p-6 rounded-[2rem] flex justify-between items-center border-l-4 ${borderColor} ${bgColor} hover:bg-slate-800/40 transition-all mb-3"><div><span class="text-[11px] font-black text-white tracking-tighter uppercase">${h.user} <span class="text-slate-700 mx-2">|</span> ${h.tipo}</span><div class="text-[10px] italic historial-item font-bold mt-1 uppercase tracking-tight">${h.nom} - <span class="${textColor} font-black">${etiqueta}</span></div></div><div class="text-right"><div class="text-[8px] font-black text-slate-500 mb-1 tracking-widest uppercase">${fechaLimpia}</div><div class="text-sm font-black text-slate-300">${h.hora}</div></div></div>`;
     }).join("");
-    
-    renderStatsGarita(); 
 }
 
-// =======================================================
-// === FUNCIÓN RENDERPATIO() MODIFICADA PARA NUEVO DISEÑO ===
-// =======================================================
 function renderPatio() {
-    // 1. LEER EL NUEVO FILTRO UNIFICADO
     const filtro = (document.getElementById("filtro_patio_general") ? document.getElementById("filtro_patio_general").value : "").toLowerCase();
     
-    // 2. DIBUJAR KPIs LATERALES (Estilo ya coincide)
     const kpiPatioList = (estados) => {
         const f = patio.filter(p => estados.includes(p.estado));
         if (f.length === 0) return `<li class="text-slate-600 italic text-[10px]">Sin unidades</li>`;
@@ -647,17 +482,17 @@ function renderPatio() {
     document.getElementById("listaKpiPatio").innerHTML = kpiPatioList(["EN_PATIO", "ASIGNADO"]);
     document.getElementById("listaKpiRampa").innerHTML = kpiPatioList(["EN_RAMPA", "CARGA_LISTA", "CARGADO"]);
     
-    // 3. FILTRAR Y ORDENAR LA LISTA DE UNIDADES
     const prioridadOrden = { "EN_PATIO": 1, "ASIGNADO": 2, "EN_RAMPA": 3, "CARGA_LISTA": 4, "CARGADO": 5, "ENVIADO_A_TIENDA": 6, "FUERA_DEL_RECINTO": 7 };
 
     const listado = patio.filter(u => {
-        const ubicacionTexto = (u.estado === 'ENVIADO_A_TIENDA' && u.tienda) ? u.tienda : (u.rampa ? 'Rampa ' + u.rampa : 'Patio');
+        const estadoLabel = (ESTADOS_UI[u.estado] || {}).label || u.estado;
+        const ubicacionTexto = (u.rampa ? `R-${u.rampa}` : 'Patio');
         return !filtro || 
                u.user.toLowerCase().includes(filtro) || 
                u.nom.toLowerCase().includes(filtro) ||
                (u.tipo || "").toLowerCase().includes(filtro) ||
-               ubicacionTexto.toLowerCase().includes(filtro) ||
-               (ESTADOS_UI[u.estado]?.label || u.estado).toLowerCase().includes(filtro);
+               estadoLabel.toLowerCase().includes(filtro) ||
+               ubicacionTexto.toLowerCase().includes(filtro);
     }).sort((a, b) => {
         const pA = prioridadOrden[a.estado] || 99;
         const pB = prioridadOrden[b.estado] || 99;
@@ -665,16 +500,18 @@ function renderPatio() {
         return a.timestamp - b.timestamp; 
     });
 
-    // 4. ACTUALIZAR CONTADOR DE VEHÍCULOS (Punto 4)
     if(document.getElementById("totalVehiculosHeader")) {
         document.getElementById("totalVehiculosHeader").innerText = `Total de Unidades: ${listado.length}`;
     }
 
-    // 5. DIBUJAR FILAS DE LA TABLA CON EL NUEVO DISEÑO
     document.getElementById("tablaPatioCuerpo").innerHTML = listado.map((u, index) => {
         const min = Math.floor((Date.now() - (u.lastUpdate || u.timestamp)) / 60000);
         const ui = ESTADOS_UI[u.estado] || { label: u.estado, class: "text-slate-400" };
-        const ubicacionTexto = (u.estado === 'ENVIADO_A_TIENDA' && u.tienda) ? u.tienda : (u.rampa ? 'Rampa ' + u.rampa : 'Patio');
+        
+        let ubicacionTexto = u.rampa ? `R-${u.rampa}` : 'Patio';
+        if (u.estado === 'ENVIADO_A_TIENDA' && u.tienda) ubicacionTexto = u.tienda;
+        if (u.estado === 'FUERA_DEL_RECINTO') ubicacionTexto = '—'; // PUNTO 2
+        
         const bgRow = index % 2 === 0 ? 'bg-white/[0.02]' : 'bg-transparent';
 
         let accionesHtml = `<button onclick="cambiarEstadoManualmente('${u.user}')" class="bg-blue-600 hover:bg-blue-400 text-white p-2 w-8 h-8 rounded-full flex items-center justify-center transition-all shadow-[0_0_10px_rgba(37,99,235,0.4)] hover:scale-110" title="Modificar">⚙️</button>`;
@@ -705,7 +542,8 @@ function renderPatio() {
         </tr>`;
     }).join("") || `<tr><td colspan="7" class="text-center text-slate-600 py-20 italic text-sm bg-slate-900/20 rounded-xl border border-dashed border-slate-700/50">No hay vehículos que coincidan con la búsqueda</td></tr>`;
     
-    renderStatsPatio(); 
+    // PUNTO 7: DIBUJAR SOLICITUDES EN PANEL IZQUIERDO
+    document.getElementById("listaSolicitudesDespacho").innerHTML = solicitudesDespacho.map(s => `<div class="bg-cyan-900/30 border border-cyan-500/20 p-3 rounded-lg text-[10px]"><p class="text-cyan-400 font-black">RAMPA ${s.rampa}</p><p class="text-slate-400 font-bold">${s.tipoReq || 'CUALQUIERA'}</p></div>`).join("") || `<p class="text-slate-600 italic text-[10px]">Sin solicitudes</p>`;
 }
 
 function abrirSelectorModal(titulo, opciones, callback) {
