@@ -117,54 +117,87 @@
                 </div>
             </div>
 
-            <!-- PATIO -->
-            <div id="patio" class="hidden">
-                <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                    <div class="lg:col-span-2 sidebar-scroll pr-2">
-                        <div class="glass p-5 rounded-2xl border-l-4 border-cyan-500 shadow-[0_0_15px_rgba(6,182,212,0.1)] mb-4">
-                            <p class="text-[10px] font-black text-slate-500 uppercase mb-1 tracking-widest">Viajes Despachados</p>
-                            <div id="kpiViajes" class="text-4xl font-black text-cyan-400 mt-1">0</div>
+            <!-- PATIO (ESTILO GAMER / GLASSMORPHISM) -->
+            <div id="patio" class="hidden relative rounded-[2rem] overflow-hidden border border-slate-700/50 shadow-2xl p-6 min-h-[85vh]">
+                
+                <!-- Fondo de imagen oscuro simulando el garaje del juego -->
+                <div class="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1586528116311-ad8ed7e66a5a?q=80&w=2070&auto=format&fit=crop')] bg-cover bg-center opacity-20"></div>
+                <div class="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-900/95 to-slate-950/90"></div>
+
+                <!-- Contenido Principal -->
+                <div class="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-6 h-full">
+                    
+                    <!-- PANEL IZQUIERDO (Filtros y KPIs) -->
+                    <div class="lg:col-span-3 bg-slate-900/60 backdrop-blur-xl border border-white/10 rounded-[1.5rem] flex flex-col overflow-hidden shadow-[0_0_40px_rgba(0,0,0,0.5)]">
+                        <div class="p-5 border-b border-white/5 flex justify-between items-center bg-slate-800/40">
+                            <h3 class="text-white font-bold text-sm tracking-wide">Resumen Operativo</h3>
+                            <span class="text-slate-400">«</span>
                         </div>
-                        <div class="glass p-5 rounded-2xl border-l-4 border-blue-500 mb-4">
-                            <p class="text-[10px] font-black text-slate-500 uppercase mb-3 tracking-widest">En Patio</p>
-                            <ul id="listaKpiPatio" class="text-xs font-bold space-y-1 text-slate-400"></ul>
+                        
+                        <div class="p-5 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-700 space-y-6 flex-1">
+                            <!-- Buscador -->
+                            <div>
+                                <p class="text-slate-400 text-xs mb-2">Buscar Unidad</p>
+                                <input id="filtro_id" oninput="renderPatio()" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-xs text-white outline-none focus:border-blue-500 transition-colors shadow-inner" placeholder="Escribe ID o Conductor...">
+                            </div>
+
+                            <!-- KPI Viajes -->
+                            <div class="bg-emerald-900/20 border border-emerald-500/20 rounded-xl p-4">
+                                <p class="text-emerald-500 text-[10px] uppercase tracking-widest mb-1 font-bold">Viajes Despachados</p>
+                                <div id="kpiViajes" class="text-3xl font-black text-white">0</div>
+                            </div>
+
+                            <!-- KPI Patio -->
+                            <div>
+                                <div class="flex items-center gap-2 mb-3">
+                                    <div class="w-3 h-3 bg-blue-500 rounded-sm"></div>
+                                    <p class="text-slate-300 text-xs font-bold">Unidades en Patio</p>
+                                </div>
+                                <ul id="listaKpiPatio" class="text-xs font-bold space-y-2 text-slate-400 bg-slate-950/40 p-3 rounded-xl border border-white/5"></ul>
+                            </div>
+
+                            <!-- KPI Rampa -->
+                            <div>
+                                <div class="flex items-center gap-2 mb-3">
+                                    <div class="w-3 h-3 bg-purple-500 rounded-sm"></div>
+                                    <p class="text-slate-300 text-xs font-bold">Unidades en Rampa</p>
+                                </div>
+                                <ul id="listaKpiRampa" class="text-xs font-bold space-y-2 text-slate-400 bg-slate-950/40 p-3 rounded-xl border border-white/5"></ul>
+                            </div>
                         </div>
-                        <div class="glass p-5 rounded-2xl border-l-4 border-emerald-500 mb-4">
-                            <p class="text-[10px] font-black text-slate-500 uppercase mb-3 tracking-widest">En Rampa</p>
-                            <ul id="listaKpiRampa" class="text-xs font-bold space-y-1 text-slate-400"></ul>
-                        </div>
-                        <div class="pt-2">
-                            <p class="text-[10px] font-black text-slate-600 uppercase mb-2 px-1 tracking-widest">Solicitudes</p>
-                            <div id="listaSolicitudesDespacho" class="space-y-2"></div>
+
+                        <!-- Botón de Acción inferior simulando "Apply" -->
+                        <div class="p-4 border-t border-white/5 bg-slate-900/80 flex gap-2">
+                            <button onclick="renderPatio()" class="flex-1 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black rounded-xl py-3 text-xs uppercase tracking-widest transition-all shadow-[0_0_15px_rgba(16,185,129,0.3)]">Actualizar</button>
+                            <button onclick="document.getElementById('filtro_id').value=''; renderPatio()" class="bg-blue-600 hover:bg-blue-500 text-white rounded-xl px-4 flex items-center justify-center transition-all shadow-lg">✖</button>
                         </div>
                     </div>
 
-                    <div class="lg:col-span-10 glass rounded-3xl overflow-hidden flex flex-col">
-                        <div class="table-scroll flex-1">
-                            <table class="w-full text-left table-compact relative">
-                                <thead class="sticky top-0 bg-slate-900 z-10 shadow-md">
+                    <!-- PANEL DERECHO (Tabla de Mercado/Patio) -->
+                    <div class="lg:col-span-9 bg-slate-900/60 backdrop-blur-xl border border-white/10 rounded-[1.5rem] flex flex-col shadow-[0_0_40px_rgba(0,0,0,0.5)] overflow-hidden">
+                        
+                        <!-- Header de la tabla -->
+                        <div class="p-5 border-b border-white/5 flex justify-between items-center bg-slate-800/40">
+                            <h3 class="text-white font-bold text-sm tracking-wide">Mercado de Unidades Activas</h3>
+                            <span class="text-slate-400 text-xs" id="totalVehiculosHeader">Total vehículos: 0</span>
+                        </div>
+
+                        <!-- Cuerpo de la Tabla -->
+                        <div class="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-700 p-2">
+                            <table class="w-full text-left border-separate border-spacing-y-1">
+                                <thead class="text-slate-400 text-[10px] uppercase tracking-widest sticky top-0 bg-slate-900/90 backdrop-blur-md z-10">
                                     <tr>
-                                        <th>Ubicación</th>
-                                        <th>ID</th>
-                                        <th>Conductor</th>
-                                        <th>Tipo</th>
-                                        <th>Hora Llegada</th>
-                                        <th>Tiempo</th>
-                                        <th>Estado</th>
-                                        <th style="text-align:right">Acción</th>
-                                    </tr>
-                                    <tr class="bg-slate-950/90 backdrop-blur-md">
-                                        <th class="p-1.5 border-b border-slate-800"><input id="filtro_ubicacion" oninput="renderPatio()" class="w-full bg-black/60 border border-slate-700 rounded text-[10px] p-1.5 outline-none focus:border-blue-500 text-slate-200" placeholder="Buscar..."></th>
-                                        <th class="p-1.5 border-b border-slate-800"><input id="filtro_id" oninput="renderPatio()" class="w-full bg-black/60 border border-slate-700 rounded text-[10px] p-1.5 outline-none focus:border-blue-500 text-slate-200" placeholder="Buscar..."></th>
-                                        <th class="p-1.5 border-b border-slate-800"><input id="filtro_conductor" oninput="renderPatio()" class="w-full bg-black/60 border border-slate-700 rounded text-[10px] p-1.5 outline-none focus:border-blue-500 text-slate-200" placeholder="Buscar..."></th>
-                                        <th class="p-1.5 border-b border-slate-800"><input id="filtro_tipo" oninput="renderPatio()" class="w-full bg-black/60 border border-slate-700 rounded text-[10px] p-1.5 outline-none focus:border-blue-500 text-slate-200" placeholder="Buscar..."></th>
-                                        <th class="p-1.5 border-b border-slate-800"></th>
-                                        <th class="p-1.5 border-b border-slate-800"></th>
-                                        <th class="p-1.5 border-b border-slate-800"><input id="filtro_estado" oninput="renderPatio()" class="w-full bg-black/60 border border-slate-700 rounded text-[10px] p-1.5 outline-none focus:border-blue-500 text-slate-200" placeholder="Buscar..."></th>
-                                        <th class="p-1.5 border-b border-slate-800"></th>
+                                        <th class="p-4 font-normal rounded-l-lg">Modelo / ID</th>
+                                        <th class="p-4 font-normal text-center">Tipo</th>
+                                        <th class="p-4 font-normal text-center">Ubicación</th>
+                                        <th class="p-4 font-normal text-right">Tiempo ↑</th>
+                                        <th class="p-4 font-normal text-right">Estado</th>
+                                        <th class="p-4 font-normal text-center rounded-r-lg">Control</th>
                                     </tr>
                                 </thead>
-                                <tbody id="tablaPatioCuerpo"></tbody>
+                                <tbody id="tablaPatioCuerpo" class="text-xs">
+                                    <!-- Se llena con JS -->
+                                </tbody>
                             </table>
                         </div>
                     </div>
@@ -183,7 +216,7 @@
             <div id="admin" class="hidden max-w-7xl mx-auto glass p-10 rounded-[3rem] shadow-2xl">
                 <h2 class="text-2xl font-black tracking-tighter uppercase italic text-blue-400 mb-6">Administración Central</h2>
                 
-                <!-- PESTAÑAS (NUEVA PESTAÑA AÑADIDA) -->
+                <!-- PESTAÑAS -->
                 <div class="flex gap-4 mb-8 border-b border-slate-700 pb-4 overflow-x-auto">
                     <button onclick="switchAdminTab('form')" id="btnTabForm" class="bg-blue-600 px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap">Gestión de Usuarios</button>
                     <button onclick="switchAdminTab('audit')" id="btnTabAudit" class="bg-slate-800 text-slate-400 px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-700 transition-all whitespace-nowrap">Auditoría de Ciclos</button>
@@ -220,7 +253,7 @@
                     </table>
                 </div>
                 
-                <!-- SECCIÓN 3: AJUSTES DEL SISTEMA (NUEVA) -->
+                <!-- SECCIÓN 3: AJUSTES DEL SISTEMA -->
                 <div id="adminConfigSection" class="hidden">
                     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
                         
