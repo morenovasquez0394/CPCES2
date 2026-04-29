@@ -16,23 +16,20 @@
     <link rel="stylesheet" href="style.css">
     
     <style>
-        /* === CÓDIGO AÑADIDO PARA EL FONDO DEL LOGIN === */
-        #loginScreen {
-            background-image: url('fondo-login.jpg'); /* <-- ¡Asegúrate que el nombre coincida con tu imagen! */
+        /* === CÓDIGO MODIFICADO PARA FONDO GLOBAL === */
+        body {
+            background-image: url('fondo-login.jpg'); /* <-- Tu imagen de fondo para TODA la app */
             background-size: cover;
             background-position: center;
-            position: relative;
+            background-attachment: fixed; /* Mantiene el fondo estático al hacer scroll */
         }
-        #loginScreen::before {
+        /* Capa oscura semi-transparente sobre la imagen para legibilidad */
+        body::before {
             content: '';
-            position: absolute;
+            position: fixed; /* Ocupa toda la pantalla siempre */
             inset: 0;
-            background-color: rgba(2, 6, 23, 0.85);
-            z-index: 1;
-        }
-        #loginScreen > div {
-            position: relative;
-            z-index: 2;
+            background-color: rgba(2, 6, 23, 0.85); /* Azul oscuro de tu app con opacidad */
+            z-index: -1; /* Se pone detrás de todo el contenido */
         }
         /* ============================================= */
 
@@ -40,7 +37,8 @@
         .scrollbar-thin::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
     </style>
 </head>
-<body class="bg-[#020617] text-slate-200 min-h-screen">
+<!-- Se ha quitado la clase 'bg-[#020617]' para que el fondo sea visible -->
+<body class="text-slate-200 min-h-screen">
 
     <!-- LOGIN -->
     <div id="loginScreen" class="h-screen flex items-center justify-center p-4">
@@ -121,7 +119,6 @@
                 </div>
             </div>
 
-            <!-- PATIO (DISEÑO FINAL CON CORRECCIONES) -->
             <div id="patio" class="hidden relative rounded-[2rem] overflow-hidden border border-slate-700/50 shadow-2xl p-6 h-[calc(100vh-140px)]">
                 <div class="absolute inset-0 bg-[url('https://images.pexels.com/photos/2249290/pexels-photo-2249290.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2')] bg-cover bg-center opacity-10"></div>
                 <div class="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-900/95 to-slate-950/90"></div>
