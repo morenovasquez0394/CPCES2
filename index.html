@@ -11,20 +11,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CP CES - Control Logístico de Patio</title>
-    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Librería para escanear QR / Código de Barras -->
     <script src="https://unpkg.com/html5-qrcode"></script>
     <link rel="stylesheet" href="style.css">
     
     <style>
-        .sidebar-scroll { max-height: calc(100vh - 200px); overflow-y: auto; scrollbar-width: thin; scrollbar-color: #1e293b transparent; }
-        .sidebar-scroll::-webkit-scrollbar { width: 4px; }
-        .sidebar-scroll::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 10px; }
-        
-        .table-scroll { max-height: calc(100vh - 220px); overflow-y: auto; scrollbar-width: thin; scrollbar-color: #3b82f6 transparent; }
-        .table-scroll::-webkit-scrollbar { width: 6px; }
-        .table-scroll::-webkit-scrollbar-thumb { background: #3b82f6; border-radius: 10px; }
+        .scrollbar-thin::-webkit-scrollbar { width: 4px; }
+        .scrollbar-thin::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
     </style>
 </head>
 <body class="bg-[#020617] text-slate-200 min-h-screen">
@@ -33,14 +26,12 @@
     <div id="loginScreen" class="h-screen flex items-center justify-center p-4">
         <div class="glass p-12 rounded-[2.5rem] shadow-2xl text-center w-full max-w-sm border-t border-white/10">
             <h2 class="text-5xl font-black mb-10 bg-gradient-to-br from-blue-400 via-indigo-400 to-emerald-400 bg-clip-text text-transparent italic tracking-tighter">CP CES</h2>
-
             <div id="loginForm" class="flex flex-col gap-4">
                 <input id="loginUser" class="p-4 bg-slate-900/80 rounded-2xl outline-none border border-slate-700 focus:border-blue-500 transition-all text-center font-bold" placeholder="Usuario / Ficha" onkeydown="if(event.key==='Enter') document.getElementById('loginPass').focus()">
                 <input id="loginPass" type="password" class="p-4 bg-slate-900/80 rounded-2xl outline-none border border-slate-700 focus:border-blue-500 transition-all text-center font-bold text-xs" placeholder="Clave de acceso" onkeydown="if(event.key==='Enter') intentarLogin()">
                 <button id="btnLogin" onclick="intentarLogin()" class="bg-blue-600 hover:bg-blue-500 p-4 rounded-2xl font-black shadow-xl shadow-blue-900/40 transition-all active:scale-95 uppercase tracking-widest mt-2">Ingresar</button>
                 <p id="loginError" class="text-red-500 text-[10px] mt-2 font-bold uppercase"></p>
             </div>
-
             <div id="changePassForm" class="hidden flex flex-col gap-4 text-left">
                 <p class="text-yellow-500 text-xs mb-2 font-bold text-center uppercase tracking-widest">Crea tu Contraseña</p>
                 <input id="newPass1" type="password" class="p-4 bg-slate-900 rounded-2xl border border-yellow-600/30 outline-none w-full" placeholder="Nueva Clave" onkeydown="if(event.key==='Enter') document.getElementById('newPass2').focus()">
@@ -68,8 +59,6 @@
 
     <!-- APP SHELL -->
     <div id="app" class="hidden min-h-screen flex flex-col">
-        
-        <!-- HEADER GLOBAL -->
         <header class="sticky top-0 z-50 bg-[#020617]/95 backdrop-blur-xl border-b border-slate-800 px-4 lg:px-10 py-3 flex flex-col shadow-xl w-full transition-all">
             <div class="flex items-center justify-between w-full">
                 <div class="flex items-center gap-4">
@@ -88,13 +77,9 @@
                     <span class="text-red-500 text-sm">✕</span>
                 </button>
             </div>
-            <div id="headerStats" class="w-full mt-3 overflow-hidden empty:hidden"></div>
         </header>
 
-        <!-- CONTENEDOR DE MODULOS -->
         <div class="flex-1 w-full p-4 md:p-10 pt-6">
-
-            <!-- GARITA -->
             <div id="garita" class="hidden max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 lg:items-start">
                 <div class="glass p-12 rounded-[3rem] flex flex-col justify-center items-center relative shadow-2xl border-t border-white/5 lg:sticky lg:top-[120px]">
                     <h2 class="text-3xl font-light mb-8 text-center tracking-tight">Registro de <b class="text-emerald-400 font-extrabold uppercase italic">Acceso</b></h2>
@@ -107,7 +92,6 @@
                         <div id="mensajeGarita" class="text-center h-14 flex items-center justify-center font-black text-2xl uppercase italic mt-4"></div>
                     </div>
                 </div>
-
                 <div class="flex flex-col gap-6 w-full">
                     <h3 class="text-[11px] font-black tracking-[0.5em] text-slate-500 px-6 uppercase flex justify-between">
                         <span>Bitácora de Operaciones</span>
@@ -117,94 +101,73 @@
                 </div>
             </div>
 
-            <!-- PATIO (ESTILO GAMER / GLASSMORPHISM) -->
-            <div id="patio" class="hidden relative rounded-[2rem] overflow-hidden border border-slate-700/50 shadow-2xl p-6 min-h-[85vh]">
-                
-                <!-- Fondo de imagen oscuro simulando el garaje del juego -->
-                <div class="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1586528116311-ad8ed7e66a5a?q=80&w=2070&auto=format&fit=crop')] bg-cover bg-center opacity-20"></div>
+            <!-- PATIO (NUEVO DISEÑO CON CORRECCIONES) -->
+            <div id="patio" class="hidden relative rounded-[2rem] overflow-hidden border border-slate-700/50 shadow-2xl p-6 h-[calc(100vh-140px)]">
+                <!-- PUNTO 5: FONDO PERSONALIZABLE. Cambia la URL por la de tu imagen local. ej: bg-[url('mi-fondo.jpg')] -->
+                <div class="absolute inset-0 bg-[url('https://images.pexels.com/photos/2249290/pexels-photo-2249290.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2')] bg-cover bg-center opacity-10"></div>
                 <div class="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-900/95 to-slate-950/90"></div>
-
-                <!-- Contenido Principal -->
+                
                 <div class="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-6 h-full">
-                    
-                    <!-- PANEL IZQUIERDO (Filtros y KPIs) -->
                     <div class="lg:col-span-3 bg-slate-900/60 backdrop-blur-xl border border-white/10 rounded-[1.5rem] flex flex-col overflow-hidden shadow-[0_0_40px_rgba(0,0,0,0.5)]">
                         <div class="p-5 border-b border-white/5 flex justify-between items-center bg-slate-800/40">
                             <h3 class="text-white font-bold text-sm tracking-wide">Resumen Operativo</h3>
-                            <span class="text-slate-400">«</span>
                         </div>
-                        
-                        <div class="p-5 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-700 space-y-6 flex-1">
-                            <!-- Buscador -->
+                        <div class="p-5 overflow-y-auto scrollbar-thin space-y-6 flex-1">
                             <div>
                                 <p class="text-slate-400 text-xs mb-2">Buscar Unidad</p>
-                                <input id="filtro_id" oninput="renderPatio()" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-xs text-white outline-none focus:border-blue-500 transition-colors shadow-inner" placeholder="Escribe ID o Conductor...">
+                                <input id="filtro_patio_general" oninput="renderPatio()" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-xs text-white outline-none focus:border-blue-500 transition-colors shadow-inner" placeholder="ID, Conductor, Tipo, etc...">
                             </div>
-
-                            <!-- KPI Viajes -->
                             <div class="bg-emerald-900/20 border border-emerald-500/20 rounded-xl p-4">
-                                <p class="text-emerald-500 text-[10px] uppercase tracking-widest mb-1 font-bold">Viajes Despachados</p>
+                                <p class="text-emerald-500 text-[10px] uppercase tracking-widest mb-1 font-bold">Viajes Despachados Hoy</p>
                                 <div id="kpiViajes" class="text-3xl font-black text-white">0</div>
                             </div>
-
-                            <!-- KPI Patio -->
                             <div>
-                                <div class="flex items-center gap-2 mb-3">
-                                    <div class="w-3 h-3 bg-blue-500 rounded-sm"></div>
-                                    <p class="text-slate-300 text-xs font-bold">Unidades en Patio</p>
-                                </div>
+                                <div class="flex items-center gap-2 mb-3"><div class="w-3 h-3 bg-blue-500 rounded-sm"></div><p class="text-slate-300 text-xs font-bold">Unidades en Patio</p></div>
                                 <ul id="listaKpiPatio" class="text-xs font-bold space-y-2 text-slate-400 bg-slate-950/40 p-3 rounded-xl border border-white/5"></ul>
                             </div>
-
-                            <!-- KPI Rampa -->
                             <div>
-                                <div class="flex items-center gap-2 mb-3">
-                                    <div class="w-3 h-3 bg-purple-500 rounded-sm"></div>
-                                    <p class="text-slate-300 text-xs font-bold">Unidades en Rampa</p>
-                                </div>
+                                <div class="flex items-center gap-2 mb-3"><div class="w-3 h-3 bg-purple-500 rounded-sm"></div><p class="text-slate-300 text-xs font-bold">Unidades en Rampa</p></div>
                                 <ul id="listaKpiRampa" class="text-xs font-bold space-y-2 text-slate-400 bg-slate-950/40 p-3 rounded-xl border border-white/5"></ul>
                             </div>
+                            <!-- PUNTO 7: SECCIÓN DE SOLICITUDES VISIBLE -->
+                            <div>
+                                <div class="flex items-center gap-2 mb-3"><div class="w-3 h-3 bg-cyan-500 rounded-sm"></div><p class="text-slate-300 text-xs font-bold">Solicitudes Activas</p></div>
+                                <div id="listaSolicitudesDespacho" class="space-y-2"></div>
+                            </div>
                         </div>
-
-                        <!-- Botón de Acción inferior simulando "Apply" -->
                         <div class="p-4 border-t border-white/5 bg-slate-900/80 flex gap-2">
                             <button onclick="renderPatio()" class="flex-1 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black rounded-xl py-3 text-xs uppercase tracking-widest transition-all shadow-[0_0_15px_rgba(16,185,129,0.3)]">Actualizar</button>
-                            <button onclick="document.getElementById('filtro_id').value=''; renderPatio()" class="bg-blue-600 hover:bg-blue-500 text-white rounded-xl px-4 flex items-center justify-center transition-all shadow-lg">✖</button>
+                            <button onclick="document.getElementById('filtro_patio_general').value=''; renderPatio()" class="bg-blue-600 hover:bg-blue-500 text-white rounded-xl px-4 flex items-center justify-center transition-all shadow-lg">✖</button>
                         </div>
                     </div>
-
-                    <!-- PANEL DERECHO (Tabla de Mercado/Patio) -->
-                    <div class="lg:col-span-9 bg-slate-900/60 backdrop-blur-xl border border-white/10 rounded-[1.5rem] flex flex-col shadow-[0_0_40px_rgba(0,0,0,0.5)] overflow-hidden">
-                        
-                        <!-- Header de la tabla -->
-                        <div class="p-5 border-b border-white/5 flex justify-between items-center bg-slate-800/40">
-                            <h3 class="text-white font-bold text-sm tracking-wide">Mercado de Unidades Activas</h3>
-                            <span class="text-slate-400 text-xs" id="totalVehiculosHeader">Total vehículos: 0</span>
+                    
+                    <!-- PUNTO 3 y 4: SCROLL INDEPENDIENTE CORREGIDO -->
+                    <div class="lg:col-span-9 bg-slate-900/60 backdrop-blur-xl border border-white/10 rounded-[1.5rem] flex flex-col shadow-[0_0_40px_rgba(0,0,0,0.5)] h-full overflow-hidden">
+                        <div class="p-5 border-b border-white/5 flex-shrink-0 flex justify-between items-center bg-slate-800/40">
+                            <h3 class="text-white font-bold text-sm tracking-wide">Lista de Unidades Activas</h3>
+                            <span class="text-slate-400 text-xs" id="totalVehiculosHeader">Total de Unidades: 0</span>
                         </div>
-
-                        <!-- Cuerpo de la Tabla -->
-                        <div class="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-700 p-2">
+                        <div class="flex-1 overflow-y-auto scrollbar-thin p-2">
                             <table class="w-full text-left border-separate border-spacing-y-1">
+                                <!-- PUNTO 1: ENCABEZADOS VALIDADOS -->
                                 <thead class="text-slate-400 text-[10px] uppercase tracking-widest sticky top-0 bg-slate-900/90 backdrop-blur-md z-10">
                                     <tr>
-                                        <th class="p-4 font-normal rounded-l-lg">Modelo / ID</th>
+                                        <th class="p-4 font-normal rounded-l-lg">ID / Conductor</th>
                                         <th class="p-4 font-normal text-center">Tipo</th>
                                         <th class="p-4 font-normal text-center">Ubicación</th>
-                                        <th class="p-4 font-normal text-right">Tiempo ↑</th>
+                                        <th class="p-4 font-normal text-center">H. Llegada</th>
+                                        <th class="p-4 font-normal text-right">Tiempo</th>
                                         <th class="p-4 font-normal text-right">Estado</th>
-                                        <th class="p-4 font-normal text-center rounded-r-lg">Control</th>
+                                        <th class="p-4 font-normal text-center rounded-r-lg">Acción</th>
                                     </tr>
                                 </thead>
-                                <tbody id="tablaPatioCuerpo" class="text-xs">
-                                    <!-- Se llena con JS -->
-                                </tbody>
+                                <tbody id="tablaPatioCuerpo" class="text-xs"></tbody>
                             </table>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- DESPACHO -->
             <div id="despacho" class="hidden flex flex-col gap-6">
                 <div class="flex flex-wrap justify-between items-end px-4 gap-4 mb-2">
                     <h3 class="text-xs font-black text-slate-500 uppercase tracking-widest italic">Panel Maestro de Despacho</h3>
@@ -212,18 +175,13 @@
                 <div id="gridDespacho" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-6 gap-4"></div>
             </div>
 
-            <!-- ADMIN -->
             <div id="admin" class="hidden max-w-7xl mx-auto glass p-10 rounded-[3rem] shadow-2xl">
                 <h2 class="text-2xl font-black tracking-tighter uppercase italic text-blue-400 mb-6">Administración Central</h2>
-                
-                <!-- PESTAÑAS -->
                 <div class="flex gap-4 mb-8 border-b border-slate-700 pb-4 overflow-x-auto">
                     <button onclick="switchAdminTab('form')" id="btnTabForm" class="bg-blue-600 px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap">Gestión de Usuarios</button>
                     <button onclick="switchAdminTab('audit')" id="btnTabAudit" class="bg-slate-800 text-slate-400 px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-700 transition-all whitespace-nowrap">Auditoría de Ciclos</button>
                     <button onclick="switchAdminTab('config')" id="btnTabConfig" class="bg-slate-800 text-slate-400 px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-700 transition-all whitespace-nowrap flex items-center gap-2"><span class="text-sm">⚙️</span> Ajustes del Sistema</button>
                 </div>
-
-                <!-- SECCIÓN 1: USUARIOS -->
                 <div id="adminFormSection">
                     <div class="flex justify-end mb-6">
                         <select id="filtroTipo" onchange="ajustarFormularioAdmin()" class="bg-blue-600 hover:bg-blue-500 p-4 rounded-2xl text-[10px] font-black tracking-widest transition-all cursor-pointer uppercase outline-none border-none shadow-xl shadow-blue-900/20">
@@ -244,77 +202,60 @@
                     </div>
                     <div class="overflow-x-auto"><table class="w-full"><thead class="text-slate-600 text-[11px] font-black uppercase tracking-[0.3em] border-b border-slate-800"><tr><th class="p-6 text-left">Ficha</th><th class="p-6 text-left">Usuario</th><th class="p-6 text-left">Detalles</th><th class="p-6 text-right">Control</th></tr></thead><tbody id="listaUsuarios" class="divide-y divide-slate-800/50"></tbody></table></div>
                 </div>
-
-                <!-- SECCIÓN 2: AUDITORÍA -->
                 <div id="adminAuditSection" class="hidden overflow-x-auto">
                     <table class="w-full text-left table-compact">
                         <thead><tr><th>Fecha / Hora</th><th>ID de Ciclo</th><th>Ficha</th><th>Chofer</th><th>Módulo</th><th>Acción Registrada</th></tr></thead>
                         <tbody id="listaAuditoriaCuerpo"></tbody>
                     </table>
                 </div>
-                
-                <!-- SECCIÓN 3: AJUSTES DEL SISTEMA -->
                 <div id="adminConfigSection" class="hidden">
                     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-                        
-                        <!-- RAMPAS -->
                         <div class="bg-slate-950/50 p-8 rounded-[2rem] border border-slate-800 flex flex-col">
                             <h3 class="text-blue-400 font-black tracking-widest uppercase text-sm mb-2">Total de Rampas</h3>
                             <p class="text-[10px] text-slate-500 mb-6 flex-1">Cantidad máxima de rampas de despacho habilitadas en el patio.</p>
                             <input id="configRampas" type="number" class="p-6 bg-slate-900 rounded-2xl border border-slate-700 outline-none focus:border-blue-500 font-black text-center text-3xl text-white w-full" placeholder="Ej: 24">
                         </div>
-                        
-                        <!-- TIENDAS -->
                         <div class="bg-slate-950/50 p-8 rounded-[2rem] border border-slate-800 flex flex-col">
                             <h3 class="text-emerald-400 font-black tracking-widest uppercase text-sm mb-2">Directorio de Tiendas</h3>
                             <p class="text-[10px] text-slate-500 mb-6">Agrega una tienda por línea. Se mostrarán al operador al finalizar una carga.</p>
                             <textarea id="configTiendas" class="p-4 bg-slate-900 rounded-2xl border border-slate-700 outline-none focus:border-emerald-500 font-bold text-xs text-slate-300 h-64 resize-none leading-relaxed scrollbar-thin scrollbar-thumb-slate-700" placeholder="1100-WC&#10;1200-SV&#10;..."></textarea>
                         </div>
-
-                        <!-- CAMIONES -->
                         <div class="bg-slate-950/50 p-8 rounded-[2rem] border border-slate-800 flex flex-col">
                             <h3 class="text-purple-400 font-black tracking-widest uppercase text-sm mb-2">Tipos de Camiones</h3>
                             <p class="text-[10px] text-slate-500 mb-6">Formato por línea: <b>CODIGO,Nombre Visual</b>. Ejemplo: CAMION_SECO,Camion Seco 🚛</p>
                             <textarea id="configCamiones" class="p-4 bg-slate-900 rounded-2xl border border-slate-700 outline-none focus:border-purple-500 font-bold text-xs text-slate-300 h-64 resize-none leading-relaxed scrollbar-thin scrollbar-thumb-slate-700" placeholder="RIGIDO,RIGIDO&#10;CAMION_FRIO,CAMION FRIO ❄️&#10;..."></textarea>
                         </div>
-                        
                     </div>
-                    
                     <div class="flex justify-end pt-4 border-t border-slate-800 mt-4">
                         <button onclick="guardarAjustesSistema()" class="bg-blue-600 hover:bg-blue-500 px-10 py-5 rounded-2xl font-black text-sm tracking-[0.3em] transition-all shadow-[0_0_30px_rgba(37,99,235,0.3)] uppercase active:scale-95 text-white flex items-center gap-3">
                             <span>💾 Guardar Cambios en Servidor</span>
                         </button>
                     </div>
                 </div>
-
             </div>
 
-            <!-- CHOFER -->
             <div id="chofer" class="hidden max-w-md mx-auto glass p-14 rounded-[4rem] text-center shadow-2xl mt-10">
                 <h2 id="infoChoferNombre" class="text-4xl font-black mb-3 text-amber-500 uppercase italic tracking-tighter"></h2>
                 <p class="text-[10px] text-slate-600 tracking-[0.5em] mb-12 uppercase font-black">Monitoreo de Turno</p>
                 <div id="infoChofer" class="bg-slate-950/90 p-10 rounded-[2.5rem] mb-10 text-3xl font-black border border-white/5 shadow-inner"></div>
                 <div id="accionChofer"></div>
             </div>
-
         </div>
     </div>
 
-    <!-- MODAL SELECTOR DINÁMICO -->
     <div id="selectorModal" class="hidden fixed inset-0 bg-black/90 backdrop-blur-sm flex items-center justify-center z-[1000] p-4">
         <div class="bg-[#0f172a] border border-slate-700 w-full max-w-sm rounded-[2rem] flex flex-col max-h-[80vh] shadow-[0_0_50px_rgba(59,130,246,0.15)]">
             <div class="p-5 border-b border-slate-800 flex justify-between items-center">
                 <h3 id="selectorModalTitle" class="text-xs font-black uppercase text-blue-400 tracking-widest">Opciones</h3>
                 <button onclick="cerrarSelectorModal()" class="text-slate-500 hover:text-white text-xl transition-colors">&times;</button>
             </div>
-            <div id="selectorOptionsContainer" class="p-4 space-y-2 overflow-y-auto flex-1 scrollbar-thin scrollbar-thumb-slate-700"></div>
+            <div id="selectorOptionsContainer" class="p-4 space-y-2 overflow-y-auto flex-1 scrollbar-thin"></div>
             <div class="p-4 bg-slate-900/50 rounded-b-[2rem] text-center border-t border-slate-800">
                 <button onclick="cerrarSelectorModal()" class="text-[10px] font-black text-slate-400 hover:text-white uppercase tracking-widest transition-colors">Cancelar</button>
             </div>
         </div>
     </div>
 
-    <!-- POPUPS -->
     <div id="modalScanner" class="hidden fixed inset-0 bg-black/95 z-[999] flex flex-col items-center justify-center p-4">
         <h3 class="text-white font-black text-2xl uppercase tracking-widest mb-6">Escáner Activo</h3>
         <div class="w-full max-w-sm bg-white rounded-3xl overflow-hidden shadow-[0_0_50px_rgba(16,185,129,0.3)]">
@@ -335,7 +276,6 @@
         </div>
     </div>
 
-    <!-- Enlace a los scripts JS -->
     <script src="script.js"></script>
 </body>
 </html>
