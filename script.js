@@ -3,7 +3,7 @@
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzf62YCzWmjWGZtxIUhHUJNIyYJrrOEDK2XpMLpSORo9YkzkQLUYmLMGMf2X4bQRESMDw/exec';
 
 // 🔔 TELEGRAM INTEGRADO (SEGURO - NO AFECTA NADA SI NO SE USA)
-const TELEGRAM_TOKEN = "8583613125:AAHzBuNxZeb-NXzM8v57rJNmE4PBoFnpUMc";
+const TELEGRAM_TOKEN = "bot8583613125:AAHzBuNxZeb-NXzM8v57rJNmE4PBoFnpUMc";
 const TELEGRAM_CHAT_ID = "6708256846";
 
 async function enviarTelegram(mensaje){
