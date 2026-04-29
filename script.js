@@ -9,12 +9,12 @@ const TELEGRAM_CHAT_ID = "6708256846";
 async function enviarTelegram(mensaje){
     if(!TELEGRAM_TOKEN || !TELEGRAM_CHAT_ID) return;
     try{
-        await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`,{
+        await fetch(`https://api.telegram.org/bot${"bot8583613125:AAHzBuNxZeb-NXzM8v57rJNmE4PBoFnpUMc}/sendMessage`,{
             method:"POST",
             headers:{"Content-Type":"application/json"},
             body: JSON.stringify({
-                chat_id: TELEGRAM_CHAT_ID,
-                text: mensaje
+                chat_id: 6708256846,
+                text: "prueba"
             })
         });
     }catch(e){
