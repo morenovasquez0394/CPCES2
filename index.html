@@ -101,7 +101,7 @@
                 </div>
             </div>
 
-            <!-- PATIO (NUEVO DISEÑO CON CORRECCIONES) -->
+            <!-- PATIO (DISEÑO FINAL CON CORRECCIONES) -->
             <div id="patio" class="hidden relative rounded-[2rem] overflow-hidden border border-slate-700/50 shadow-2xl p-6 h-[calc(100vh-140px)]">
                 <!-- PUNTO 5: FONDO PERSONALIZABLE. Cambia la URL por la de tu imagen local. ej: bg-[url('mi-fondo.jpg')] -->
                 <div class="absolute inset-0 bg-[url('https://images.pexels.com/photos/2249290/pexels-photo-2249290.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2')] bg-cover bg-center opacity-10"></div>
@@ -113,9 +113,10 @@
                             <h3 class="text-white font-bold text-sm tracking-wide">Resumen Operativo</h3>
                         </div>
                         <div class="p-5 overflow-y-auto scrollbar-thin space-y-6 flex-1">
+                            <!-- PUNTO 1: Espacio de Solicitudes -->
                             <div>
-                                <p class="text-slate-400 text-xs mb-2">Buscar Unidad</p>
-                                <input id="filtro_patio_general" oninput="renderPatio()" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-xs text-white outline-none focus:border-blue-500 transition-colors shadow-inner" placeholder="ID, Conductor, Tipo, etc...">
+                                <div class="flex items-center gap-2 mb-3"><div class="w-3 h-3 bg-cyan-500 rounded-sm"></div><p class="text-slate-300 text-xs font-bold">Solicitudes de Despacho</p></div>
+                                <div id="listaSolicitudesDespacho" class="space-y-2"></div>
                             </div>
                             <div class="bg-emerald-900/20 border border-emerald-500/20 rounded-xl p-4">
                                 <p class="text-emerald-500 text-[10px] uppercase tracking-widest mb-1 font-bold">Viajes Despachados Hoy</p>
@@ -129,19 +130,13 @@
                                 <div class="flex items-center gap-2 mb-3"><div class="w-3 h-3 bg-purple-500 rounded-sm"></div><p class="text-slate-300 text-xs font-bold">Unidades en Rampa</p></div>
                                 <ul id="listaKpiRampa" class="text-xs font-bold space-y-2 text-slate-400 bg-slate-950/40 p-3 rounded-xl border border-white/5"></ul>
                             </div>
-                            <!-- PUNTO 7: SECCIÓN DE SOLICITUDES VISIBLE -->
-                            <div>
-                                <div class="flex items-center gap-2 mb-3"><div class="w-3 h-3 bg-cyan-500 rounded-sm"></div><p class="text-slate-300 text-xs font-bold">Solicitudes Activas</p></div>
-                                <div id="listaSolicitudesDespacho" class="space-y-2"></div>
-                            </div>
                         </div>
-                        <div class="p-4 border-t border-white/5 bg-slate-900/80 flex gap-2">
-                            <button onclick="renderPatio()" class="flex-1 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black rounded-xl py-3 text-xs uppercase tracking-widest transition-all shadow-[0_0_15px_rgba(16,185,129,0.3)]">Actualizar</button>
-                            <button onclick="document.getElementById('filtro_patio_general').value=''; renderPatio()" class="bg-blue-600 hover:bg-blue-500 text-white rounded-xl px-4 flex items-center justify-center transition-all shadow-lg">✖</button>
+                        <!-- PUNTO 3: BOTÓN ACTUALIZAR FUNCIONAL -->
+                        <div class="p-4 border-t border-white/5 bg-slate-900/80">
+                            <button onclick="syncManual()" class="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black rounded-xl py-3 text-xs uppercase tracking-widest transition-all shadow-[0_0_15px_rgba(16,185,129,0.3)]">Actualizar Datos</button>
                         </div>
                     </div>
                     
-                    <!-- PUNTO 3 y 4: SCROLL INDEPENDIENTE CORREGIDO -->
                     <div class="lg:col-span-9 bg-slate-900/60 backdrop-blur-xl border border-white/10 rounded-[1.5rem] flex flex-col shadow-[0_0_40px_rgba(0,0,0,0.5)] h-full overflow-hidden">
                         <div class="p-5 border-b border-white/5 flex-shrink-0 flex justify-between items-center bg-slate-800/40">
                             <h3 class="text-white font-bold text-sm tracking-wide">Lista de Unidades Activas</h3>
@@ -149,10 +144,10 @@
                         </div>
                         <div class="flex-1 overflow-y-auto scrollbar-thin p-2">
                             <table class="w-full text-left border-separate border-spacing-y-1">
-                                <!-- PUNTO 1: ENCABEZADOS VALIDADOS -->
                                 <thead class="text-slate-400 text-[10px] uppercase tracking-widest sticky top-0 bg-slate-900/90 backdrop-blur-md z-10">
                                     <tr>
-                                        <th class="p-4 font-normal rounded-l-lg">ID / Conductor</th>
+                                        <th class="p-4 font-normal rounded-l-lg">ID</th>
+                                        <th class="p-4 font-normal">Conductor</th>
                                         <th class="p-4 font-normal text-center">Tipo</th>
                                         <th class="p-4 font-normal text-center">Ubicación</th>
                                         <th class="p-4 font-normal text-center">H. Llegada</th>
@@ -218,12 +213,12 @@
                         <div class="bg-slate-950/50 p-8 rounded-[2rem] border border-slate-800 flex flex-col">
                             <h3 class="text-emerald-400 font-black tracking-widest uppercase text-sm mb-2">Directorio de Tiendas</h3>
                             <p class="text-[10px] text-slate-500 mb-6">Agrega una tienda por línea. Se mostrarán al operador al finalizar una carga.</p>
-                            <textarea id="configTiendas" class="p-4 bg-slate-900 rounded-2xl border border-slate-700 outline-none focus:border-emerald-500 font-bold text-xs text-slate-300 h-64 resize-none leading-relaxed scrollbar-thin scrollbar-thumb-slate-700" placeholder="1100-WC&#10;1200-SV&#10;..."></textarea>
+                            <textarea id="configTiendas" class="p-4 bg-slate-900 rounded-2xl border border-slate-700 outline-none focus:border-emerald-500 font-bold text-xs text-slate-300 h-64 resize-none leading-relaxed scrollbar-thin" placeholder="1100-WC&#10;1200-SV&#10;..."></textarea>
                         </div>
                         <div class="bg-slate-950/50 p-8 rounded-[2rem] border border-slate-800 flex flex-col">
                             <h3 class="text-purple-400 font-black tracking-widest uppercase text-sm mb-2">Tipos de Camiones</h3>
                             <p class="text-[10px] text-slate-500 mb-6">Formato por línea: <b>CODIGO,Nombre Visual</b>. Ejemplo: CAMION_SECO,Camion Seco 🚛</p>
-                            <textarea id="configCamiones" class="p-4 bg-slate-900 rounded-2xl border border-slate-700 outline-none focus:border-purple-500 font-bold text-xs text-slate-300 h-64 resize-none leading-relaxed scrollbar-thin scrollbar-thumb-slate-700" placeholder="RIGIDO,RIGIDO&#10;CAMION_FRIO,CAMION FRIO ❄️&#10;..."></textarea>
+                            <textarea id="configCamiones" class="p-4 bg-slate-900 rounded-2xl border border-slate-700 outline-none focus:border-purple-500 font-bold text-xs text-slate-300 h-64 resize-none leading-relaxed scrollbar-thin" placeholder="RIGIDO,RIGIDO&#10;CAMION_FRIO,CAMION FRIO ❄️&#10;..."></textarea>
                         </div>
                     </div>
                     <div class="flex justify-end pt-4 border-t border-slate-800 mt-4">
