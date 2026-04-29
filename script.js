@@ -159,7 +159,6 @@ function refrescarVistasActivas() {
     
     if (!document.getElementById("garita").classList.contains("hidden")) {
         renderHistorialGarita(); 
-        renderStatsGarita();
     }
 }
 
@@ -240,16 +239,14 @@ function abrirModulo(m) {
     document.getElementById(m).classList.remove("hidden");
     document.getElementById("tituloModulo").innerText = m.toUpperCase();
     actualizarReloj();
-    // PUNTO 1: EL RESUMEN SUPERIOR YA NO SE DIBUJARÁ AL ABRIR NINGÚN MÓDULO
-    // document.getElementById("headerStats").innerHTML = ""; // Se comenta o elimina esta línea
     
     if (m === 'admin') { 
         switchAdminTab('form'); 
         actualizarListaUsuarios(); 
         renderAuditoria(); 
     }
-    if (m === 'garita') { renderHistorialGarita(); } // Ya no renderiza stats
-    if (m === 'patio') { renderPatio(); } // Ya no renderiza stats
+    if (m === 'garita') { renderHistorialGarita(); }
+    if (m === 'patio') { renderPatio(); }
     if (m === 'despacho') renderDespacho();
     if (m === 'chofer') cargarInfoChofer();
 }
@@ -337,11 +334,7 @@ function renderAuditoria() {
 function iniciarScanner() {
     document.getElementById("modalScanner").classList.remove("hidden");
     if (html5QrcodeScanner == null) {
-        html5QrcodeScanner = new Html5QrcodeScanner(
-            "reader", 
-            { fps: 10, qrbox: {width: 250, height: 250}, aspectRatio: 1.0, videoConstraints: { facingMode: "environment" } }, 
-            false
-        );
+        html5QrcodeScanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: {width: 250, height: 250}, aspectRatio: 1.0, videoConstraints: { facingMode: "environment" } }, false);
         html5QrcodeScanner.render(onScanSuccess, onScanFailure);
     }
 }
@@ -372,21 +365,7 @@ async function validarYRegistrar() {
     if (vehiculoEnPatio && (vehiculoEnPatio.estado === 'ENVIADO_A_TIENDA' || vehiculoEnPatio.estado === 'FUERA_DEL_RECINTO')) {
         const vehiculoIndex = patio.findIndex(p => p.user === ficha);
         const nuevoIdCiclo = "CYC-" + Date.now().toString().slice(-6);
-
-        patio[vehiculoIndex] = {
-            ...patio[vehiculoIndex],
-            idCiclo: nuevoIdCiclo,
-            estado: "EN_PATIO",
-            hora: fh.hora,
-            fecha: fh.fecha,
-            timestamp: Date.now(),
-            lastUpdate: Date.now(),
-            rampa: null,
-            tienda: null,
-            t_llegada_rampa: "",
-            t_fin_carga: ""
-        };
-
+        patio[vehiculoIndex] = { ...patio[vehiculoIndex], idCiclo: nuevoIdCiclo, estado: "EN_PATIO", hora: fh.hora, fecha: fh.fecha, timestamp: Date.now(), lastUpdate: Date.now(), rampa: null, tienda: null, t_llegada_rampa: "", t_fin_carga: "" };
         historialEntradas.unshift({ ...patio[vehiculoIndex] });
         msg.innerHTML = `<span class='text-emerald-500 tracking-widest'>RE-INGRESO OK: ${patio[vehiculoIndex].nom.split(' ')[0]}</span>`;
         fichaInput.value = "";
@@ -463,9 +442,10 @@ function renderHistorialGarita() {
     }).join("");
 }
 
+// =======================================================
+// === FUNCIÓN RENDERPATIO() MODIFICADA PARA NUEVO DISEÑO ===
+// =======================================================
 function renderPatio() {
-    const filtro = (document.getElementById("filtro_patio_general") ? document.getElementById("filtro_patio_general").value : "").toLowerCase();
-    
     const kpiPatioList = (estados) => {
         const f = patio.filter(p => estados.includes(p.estado));
         if (f.length === 0) return `<li class="text-slate-600 italic text-[10px]">Sin unidades</li>`;
@@ -482,18 +462,13 @@ function renderPatio() {
     document.getElementById("listaKpiPatio").innerHTML = kpiPatioList(["EN_PATIO", "ASIGNADO"]);
     document.getElementById("listaKpiRampa").innerHTML = kpiPatioList(["EN_RAMPA", "CARGA_LISTA", "CARGADO"]);
     
-    const prioridadOrden = { "EN_PATIO": 1, "ASIGNADO": 2, "EN_RAMPA": 3, "CARGA_LISTA": 4, "CARGADO": 5, "ENVIADO_A_TIENDA": 6, "FUERA_DEL_RECINTO": 7 };
+    // Contar viajes de hoy
+    const hoy = formatoFechaHora().fecha;
+    const viajesHoy = historialEntradas.filter(h => h.fecha === hoy && h.estado === 'ENVIADO_A_TIENDA').length;
+    document.getElementById("kpiViajes").innerText = viajesHoy;
 
-    const listado = patio.filter(u => {
-        const estadoLabel = (ESTADOS_UI[u.estado] || {}).label || u.estado;
-        const ubicacionTexto = (u.rampa ? `R-${u.rampa}` : 'Patio');
-        return !filtro || 
-               u.user.toLowerCase().includes(filtro) || 
-               u.nom.toLowerCase().includes(filtro) ||
-               (u.tipo || "").toLowerCase().includes(filtro) ||
-               estadoLabel.toLowerCase().includes(filtro) ||
-               ubicacionTexto.toLowerCase().includes(filtro);
-    }).sort((a, b) => {
+    const prioridadOrden = { "EN_PATIO": 1, "ASIGNADO": 2, "EN_RAMPA": 3, "CARGA_LISTA": 4, "CARGADO": 5, "ENVIADO_A_TIENDA": 6, "FUERA_DEL_RECINTO": 7 };
+    const listado = patio.sort((a, b) => {
         const pA = prioridadOrden[a.estado] || 99;
         const pB = prioridadOrden[b.estado] || 99;
         if (pA !== pB) return pA - pB; 
@@ -510,25 +485,34 @@ function renderPatio() {
         
         let ubicacionTexto = u.rampa ? `R-${u.rampa}` : 'Patio';
         if (u.estado === 'ENVIADO_A_TIENDA' && u.tienda) ubicacionTexto = u.tienda;
-        if (u.estado === 'FUERA_DEL_RECINTO') ubicacionTexto = '—'; // PUNTO 2
+        if (u.estado === 'FUERA_DEL_RECINTO') ubicacionTexto = '—';
         
         const bgRow = index % 2 === 0 ? 'bg-white/[0.02]' : 'bg-transparent';
+
+        // PUNTO 4 y 5: ICONOS CONDICIONALES
+        let truckIcon;
+        if (u.tipo && u.tipo.toUpperCase().includes('FURGON SECO')) {
+            truckIcon = '<span class="text-2xl">🚛</span>';
+        } else if (u.tipo && u.tipo.toUpperCase().includes('FRIO')) {
+            truckIcon = '<span class="text-xl text-cyan-400">🚚</span>';
+        } else {
+            truckIcon = '<span class="text-xl">🚚</span>';
+        }
 
         let accionesHtml = `<button onclick="cambiarEstadoManualmente('${u.user}')" class="bg-blue-600 hover:bg-blue-400 text-white p-2 w-8 h-8 rounded-full flex items-center justify-center transition-all shadow-[0_0_10px_rgba(37,99,235,0.4)] hover:scale-110" title="Modificar">⚙️</button>`;
         if (u.estado === 'EN_PATIO') {
             accionesHtml += `<button onclick="asignarRampa('${u.user}')" class="bg-blue-500 hover:bg-blue-300 text-white p-2 w-8 h-8 rounded-full flex items-center justify-center transition-all shadow-[0_0_15px_rgba(59,130,246,0.6)] hover:scale-110" title="Asignar">🎯</button>`;
         }
 
+        // PUNTO 2 y 6: ESTRUCTURA DE TABLA CORREGIDA
         return `<tr class="${bgRow} hover:bg-white/[0.05] transition-colors group">
             <td class="p-3 rounded-l-xl">
                 <div class="flex items-center gap-3">
-                    <span class="text-xl opacity-50 group-hover:opacity-100 transition-opacity">🚚</span>
-                    <div>
-                        <div class="font-bold text-slate-200 text-sm">${u.user}</div>
-                        <div class="text-[9px] text-slate-500 uppercase">${u.nom}</div>
-                    </div>
+                    ${truckIcon}
+                    <div class="font-bold text-slate-200 text-sm">${u.user}</div>
                 </div>
             </td>
+            <td class="p-3 text-slate-400 truncate max-w-[150px]">${u.nom}</td>
             <td class="p-3 text-center text-slate-400 font-medium">${u.tipo}</td>
             <td class="p-3 text-center">
                 <span class="bg-slate-950/50 border border-slate-700/50 px-3 py-1 rounded text-slate-300">${ubicacionTexto}</span>
@@ -540,9 +524,8 @@ function renderPatio() {
                 <div class="flex items-center justify-center gap-2">${accionesHtml}</div>
             </td>
         </tr>`;
-    }).join("") || `<tr><td colspan="7" class="text-center text-slate-600 py-20 italic text-sm bg-slate-900/20 rounded-xl border border-dashed border-slate-700/50">No hay vehículos que coincidan con la búsqueda</td></tr>`;
+    }).join("") || `<tr><td colspan="8" class="text-center text-slate-600 py-20 italic text-sm bg-slate-900/20 rounded-xl border border-dashed border-slate-700/50">No hay unidades activas en patio</td></tr>`;
     
-    // PUNTO 7: DIBUJAR SOLICITUDES EN PANEL IZQUIERDO
     document.getElementById("listaSolicitudesDespacho").innerHTML = solicitudesDespacho.map(s => `<div class="bg-cyan-900/30 border border-cyan-500/20 p-3 rounded-lg text-[10px]"><p class="text-cyan-400 font-black">RAMPA ${s.rampa}</p><p class="text-slate-400 font-bold">${s.tipoReq || 'CUALQUIERA'}</p></div>`).join("") || `<p class="text-slate-600 italic text-[10px]">Sin solicitudes</p>`;
 }
 
