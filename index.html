@@ -16,6 +16,26 @@
     <link rel="stylesheet" href="style.css">
     
     <style>
+        /* === CÓDIGO AÑADIDO PARA EL FONDO DEL LOGIN === */
+        #loginScreen {
+            background-image: url('fondo-login.jpg'); /* <-- ¡Asegúrate que el nombre coincida con tu imagen! */
+            background-size: cover;
+            background-position: center;
+            position: relative;
+        }
+        #loginScreen::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background-color: rgba(2, 6, 23, 0.85);
+            z-index: 1;
+        }
+        #loginScreen > div {
+            position: relative;
+            z-index: 2;
+        }
+        /* ============================================= */
+
         .scrollbar-thin::-webkit-scrollbar { width: 4px; }
         .scrollbar-thin::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
     </style>
@@ -103,7 +123,6 @@
 
             <!-- PATIO (DISEÑO FINAL CON CORRECCIONES) -->
             <div id="patio" class="hidden relative rounded-[2rem] overflow-hidden border border-slate-700/50 shadow-2xl p-6 h-[calc(100vh-140px)]">
-                <!-- PUNTO 5: FONDO PERSONALIZABLE. Cambia la URL por la de tu imagen local. ej: bg-[url('mi-fondo.jpg')] -->
                 <div class="absolute inset-0 bg-[url('https://images.pexels.com/photos/2249290/pexels-photo-2249290.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2')] bg-cover bg-center opacity-10"></div>
                 <div class="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-900/95 to-slate-950/90"></div>
                 
@@ -113,7 +132,6 @@
                             <h3 class="text-white font-bold text-sm tracking-wide">Resumen Operativo</h3>
                         </div>
                         <div class="p-5 overflow-y-auto scrollbar-thin space-y-6 flex-1">
-                            <!-- PUNTO 1: Espacio de Solicitudes -->
                             <div>
                                 <div class="flex items-center gap-2 mb-3"><div class="w-3 h-3 bg-cyan-500 rounded-sm"></div><p class="text-slate-300 text-xs font-bold">Solicitudes de Despacho</p></div>
                                 <div id="listaSolicitudesDespacho" class="space-y-2"></div>
@@ -131,7 +149,6 @@
                                 <ul id="listaKpiRampa" class="text-xs font-bold space-y-2 text-slate-400 bg-slate-950/40 p-3 rounded-xl border border-white/5"></ul>
                             </div>
                         </div>
-                        <!-- PUNTO 3: BOTÓN ACTUALIZAR FUNCIONAL -->
                         <div class="p-4 border-t border-white/5 bg-slate-900/80">
                             <button onclick="syncManual()" class="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black rounded-xl py-3 text-xs uppercase tracking-widest transition-all shadow-[0_0_15px_rgba(16,185,129,0.3)]">Actualizar Datos</button>
                         </div>
