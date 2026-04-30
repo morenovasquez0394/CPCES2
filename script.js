@@ -1,6 +1,6 @@
 // --- START OF FILE script.js ---
 
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyBGO96_Vvtna84xGKW31Xi0FodTiYFstUc_RPmXcq-tTRBbcYZoh_SMgiDZjd3xZYP2A/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwLJA8QrALz8MKDQ54U_rMz_0MYnULQui2dqK4Miounsr4osrBcgvI7I4fn0xzr4ndxwQ/exec';
 
 async function enviarTelegram(mensaje, fichaDestino = null){
     if (!fichaDestino) {
