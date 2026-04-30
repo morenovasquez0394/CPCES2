@@ -1,6 +1,6 @@
 // --- START OF FILE script.js ---
 
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzRIah2cEw0zR3RooaFs-T5-oGcJDAGVLew0UkTuaeG-ZfvWbV3g7cgLrO0F2O6T7Y1Uw/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzf62YCzWmjWGZtxIUhHUJNIyYJrrOEDK2XpMLpSORo9YkzkQLUYmLMGMf2X4bQRESMDw/exec';
 
 // 🔔 TELEGRAM INTEGRADO (Ahora el frontend DELEGA el envío al Google Apps Script)
 // Estos datos YA NO SE USAN aquí directamente para el envío.
@@ -423,7 +423,7 @@ async function validarYRegistrar() {
                 vehiculoEnPatio.rampa = null;
             }
             vehiculoEnPatio.estado = "ENVIADO_A_TIENDA"; 
-            msg.innerHTML = `<span class='text-cyan-400 tracking-widest'>SALIDA OK: ${vehiculoEnPativo.nom.split(' ')[0]}</span>`;
+            msg.innerHTML = `<span class='text-cyan-400 tracking-widest'>SALIDA OK: ${vehiculoEnPatio.nom.split(' ')[0]}</span>`; // <-- Corregido el typo aquí
             esSalidaValida = true;
             tiemposCiclos.unshift({ fecha: fh.fecha, ficha: ficha, ciclo: vehiculoEnPatio.idCiclo, hora_llegada: vehiculoEnPatio.hora, tiempo_patio: calcularDiferenciaMinutos(tEntrada, tLlegadaRampa), tiempo_rampa: calcularDiferenciaMinutos(tLlegadaRampa, tFinCarga), tiempo_cargado: calcularDiferenciaMinutos(tFinCarga, tAhora), hora_salida: fh.hora });
         } else {
@@ -470,58 +470,6 @@ function renderHistorialGarita() {
         
         return `<div class="glass p-6 rounded-[2rem] flex justify-between items-center border-l-4 ${borderColor} ${bgColor} hover:bg-slate-800/40 transition-all mb-3"><div><span class="text-[11px] font-black text-white tracking-tighter uppercase">${h.user} <span class="text-slate-700 mx-2">|</span> ${h.tipo}</span><div class="text-[10px] italic historial-item font-bold mt-1 uppercase tracking-tight">${h.nom} - <span class="${textColor} font-black">${etiqueta}</span></div></div><div class="text-right"><div class="text-[8px] font-black text-slate-500 mb-1 tracking-widest uppercase">${fechaLimpia}</div><div class="text-sm font-black text-slate-300">${h.hora}</div></div></div>`;
     }).join("");
-}
-
-function abrirSelectorModal(titulo, opciones, callback) {
-    const modal = document.getElementById('selectorModal');
-    const container = document.getElementById('selectorOptionsContainer');
-    document.getElementById('selectorModalTitle').innerText = titulo;
-    
-    container.innerHTML = '';
-    opciones.forEach(opt => {
-        const btn = document.createElement('button');
-        btn.className = "w-full text-left p-4 rounded-xl bg-slate-800 hover:bg-blue-600 transition-all font-bold uppercase text-[10px] tracking-widest border border-slate-700 hover:border-white/50";
-        btn.innerHTML = opt.label;
-        btn.onclick = () => {
-            modal.classList.add('hidden');
-            callback(opt.value);
-        };
-        container.appendChild(btn);
-    });
-    
-    modal.classList.remove('hidden');
-}
-
-function cerrarSelectorModal() {
-    document.getElementById('selectorModal').classList.add('hidden');
-}
-
-async function cambiarEstadoManualmente(ficha) {
-    const opts = Object.keys(ESTADOS_UI).map(key => ({ value: key, label: ESTADOS_UI[key].label }));
-    
-    abrirSelectorModal(`NUEVO ESTADO PARA ${ficha}`, opts, async (nuevoEstado) => {
-        const idx = patio.findIndex(p => p.user === ficha);
-        const vehiculo = patio[idx];
-        const estadoAnterior = vehiculo.estado;
-
-        if (nuevoEstado === "ENVIADO_A_TIENDA" || nuevoEstado === "FUERA_DEL_RECINTO" || nuevoEstado === "CARGADO" || nuevoEstado === "EN_PATIO") {
-            if (vehiculo.rampa) {
-                const rIndex = rampas.findIndex(r => r.rampa_id == vehiculo.rampa);
-                if (rIndex !== -1) rampas[rIndex].status = "LIBRE";
-                vehiculo.rampa = null;
-            }
-        }
-
-        if(nuevoEstado === "EN_RAMPA" && !vehiculo.t_llegada_rampa) vehiculo.t_llegada_rampa = Date.now();
-        if(nuevoEstado === "CARGA_LISTA" && !vehiculo.t_fin_carga) vehiculo.t_fin_carga = Date.now();
-
-        vehiculo.estado = nuevoEstado;
-        vehiculo.lastUpdate = Date.now();
-        
-        registrarAuditoria(ficha, vehiculo.nom, "PATIO (Manual)", `Cambió de ${estadoAnterior} a ${nuevoEstado}`, vehiculo.idCiclo);
-        await guardar();
-        renderPatio();
-    });
 }
 
 function renderPatio() {
