@@ -1,6 +1,6 @@
 // --- START OF FILE script.js ---
 
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwbZHK951jzuBB1qHnndkLilpW_ChxOz_kvyRtDJO_NHbwSOIrEhW9BBeytZJQpAzr4kg/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxxZOKfBuyFCONLU9sn5iVtwbd4TN3MksE-B0FLBYLnF9q_Rtukf3wt7PPheTfEOeo9qA/exec';
 
 // 🔔 TELEGRAM INTEGRADO (Ahora el frontend DELEGA el envío al Google Apps Script)
 async function enviarTelegram(mensaje, fichaDestino = null){
