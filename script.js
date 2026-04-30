@@ -180,6 +180,7 @@ function refrescarVistasActivas() {
     if (!document.getElementById("despacho").classList.contains("hidden")) renderDespacho();
     if (!document.getElementById("chofer").classList.contains("hidden")) cargarInfoChofer();
     if (!document.getElementById("admin").classList.contains("hidden")) renderAuditoria();
+    // Se asegura que renderHistorialGarita se llame cuando el módulo de garita está activo
     if (!document.getElementById("garita").classList.contains("hidden")) { renderHistorialGarita(); }
 }
 
@@ -297,7 +298,6 @@ function switchAdminTab(tab) {
     document.getElementById("btnTabConfig").className = tab === 'config' ? activeClass : inactiveClass;
 }
 
-// === MODIFICADA: Ahora muestra/oculta el campo de Telegram ID ===
 function ajustarFormularioAdmin() {
     const tipo = document.getElementById("filtroTipo").value;
     const isChofer = tipo === "CHOFER";
@@ -305,10 +305,9 @@ function ajustarFormularioAdmin() {
     document.getElementById("contTel").classList.toggle("hidden", !isChofer);
     document.getElementById("contComp").classList.toggle("hidden", !isChofer);
     document.getElementById("contTipoCam").classList.toggle("hidden", !isChofer);
-    document.getElementById("contTelegramChatId").classList.toggle("hidden", !isChofer); // <-- NUEVO: Muestra/oculta el campo
+    document.getElementById("contTelegramChatId").classList.toggle("hidden", !isChofer); 
 }
 
-// === MODIFICADA: Ahora guarda el ID de Telegram ===
 async function crearUsuario() {
     const tipo = document.getElementById("filtroTipo").value;
     const cod  = document.getElementById("regCodigo").value.trim();
@@ -321,7 +320,7 @@ async function crearUsuario() {
         nuevo.tel = document.getElementById("regTelefono").value;
         nuevo.comp = document.getElementById("regCompania").value;
         nuevo.tipoCamion = document.getElementById("regTipoCamion").value;
-        nuevo.telegram_chat_id = document.getElementById("regTelegramChatId").value.trim(); // <-- NUEVO: Guarda el ID de Telegram
+        nuevo.telegram_chat_id = document.getElementById("regTelegramChatId").value.trim();
     } else nuevo.pos = document.getElementById("regPosicion").value;
     usuarios.push(nuevo);
     await guardar();
@@ -330,16 +329,15 @@ async function crearUsuario() {
     document.getElementById("regCodigo").value = "";
     document.getElementById("regNombre").value = "";
     document.getElementById("regPassword").value = "";
-    if (tipo === "CHOFER") document.getElementById("regTelegramChatId").value = ""; // Limpia el campo después de guardar
+    if (tipo === "CHOFER") document.getElementById("regTelegramChatId").value = ""; 
     document.getElementById("regCodigo").focus();
 }
 
-// === MODIFICADA: Ahora muestra el ID de Telegram en la lista de usuarios ===
 function actualizarListaUsuarios() {
     document.getElementById("listaUsuarios").innerHTML = usuarios.map(u => {
         let detalles = u.tipoCamion || u.pos || '-';
         if (u.rol === "CHOFER" && u.telegram_chat_id) {
-            detalles += `<br><span class="text-purple-400">ID TG: ${u.telegram_chat_id}</span>`; // Muestra el ID de Telegram
+            detalles += `<br><span class="text-purple-400">ID TG: ${u.telegram_chat_id}</span>`;
         }
         return `<tr class="hover:bg-slate-800/20 transition-all group">
             <td class="p-6"><span class="font-mono font-black text-blue-400 bg-blue-500/5 px-4 py-2 rounded-xl border border-blue-500/10">${u.cod}</span></td>
@@ -423,7 +421,7 @@ async function validarYRegistrar() {
                 vehiculoEnPatio.rampa = null;
             }
             vehiculoEnPatio.estado = "ENVIADO_A_TIENDA"; 
-            msg.innerHTML = `<span class='text-cyan-400 tracking-widest'>SALIDA OK: ${vehiculoEnPatio.nom.split(' ')[0]}</span>`; // <-- Corregido el typo aquí
+            msg.innerHTML = `<span class='text-cyan-400 tracking-widest'>SALIDA OK: ${vehiculoEnPatio.nom.split(' ')[0]}</span>`; // <-- Corregido el typo aquí: vehiculoEnPativo -> vehiculoEnPatio
             esSalidaValida = true;
             tiemposCiclos.unshift({ fecha: fh.fecha, ficha: ficha, ciclo: vehiculoEnPatio.idCiclo, hora_llegada: vehiculoEnPatio.hora, tiempo_patio: calcularDiferenciaMinutos(tEntrada, tLlegadaRampa), tiempo_rampa: calcularDiferenciaMinutos(tLlegadaRampa, tFinCarga), tiempo_cargado: calcularDiferenciaMinutos(tFinCarga, tAhora), hora_salida: fh.hora });
         } else {
@@ -470,6 +468,58 @@ function renderHistorialGarita() {
         
         return `<div class="glass p-6 rounded-[2rem] flex justify-between items-center border-l-4 ${borderColor} ${bgColor} hover:bg-slate-800/40 transition-all mb-3"><div><span class="text-[11px] font-black text-white tracking-tighter uppercase">${h.user} <span class="text-slate-700 mx-2">|</span> ${h.tipo}</span><div class="text-[10px] italic historial-item font-bold mt-1 uppercase tracking-tight">${h.nom} - <span class="${textColor} font-black">${etiqueta}</span></div></div><div class="text-right"><div class="text-[8px] font-black text-slate-500 mb-1 tracking-widest uppercase">${fechaLimpia}</div><div class="text-sm font-black text-slate-300">${h.hora}</div></div></div>`;
     }).join("");
+}
+
+function abrirSelectorModal(titulo, opciones, callback) {
+    const modal = document.getElementById('selectorModal');
+    const container = document.getElementById('selectorOptionsContainer');
+    document.getElementById('selectorModalTitle').innerText = titulo;
+    
+    container.innerHTML = '';
+    opciones.forEach(opt => {
+        const btn = document.createElement('button');
+        btn.className = "w-full text-left p-4 rounded-xl bg-slate-800 hover:bg-blue-600 transition-all font-bold uppercase text-[10px] tracking-widest border border-slate-700 hover:border-white/50";
+        btn.innerHTML = opt.label;
+        btn.onclick = () => {
+            modal.classList.add('hidden');
+            callback(opt.value);
+        };
+        container.appendChild(btn);
+    });
+    
+    modal.classList.remove('hidden');
+}
+
+function cerrarSelectorModal() {
+    document.getElementById('selectorModal').classList.add('hidden');
+}
+
+async function cambiarEstadoManualmente(ficha) {
+    const opts = Object.keys(ESTADOS_UI).map(key => ({ value: key, label: ESTADOS_UI[key].label }));
+    
+    abrirSelectorModal(`NUEVO ESTADO PARA ${ficha}`, opts, async (nuevoEstado) => {
+        const idx = patio.findIndex(p => p.user === ficha);
+        const vehiculo = patio[idx];
+        const estadoAnterior = vehiculo.estado;
+
+        if (nuevoEstado === "ENVIADO_A_TIENDA" || nuevoEstado === "FUERA_DEL_RECINTO" || nuevoEstado === "CARGADO" || nuevoEstado === "EN_PATIO") {
+            if (vehiculo.rampa) {
+                const rIndex = rampas.findIndex(r => r.rampa_id == vehiculo.rampa);
+                if (rIndex !== -1) rampas[rIndex].status = "LIBRE";
+                vehiculo.rampa = null;
+            }
+        }
+
+        if(nuevoEstado === "EN_RAMPA" && !vehiculo.t_llegada_rampa) vehiculo.t_llegada_rampa = Date.now();
+        if(nuevoEstado === "CARGA_LISTA" && !vehiculo.t_fin_carga) vehiculo.t_fin_carga = Date.now();
+
+        vehiculo.estado = nuevoEstado;
+        vehiculo.lastUpdate = Date.now();
+        
+        registrarAuditoria(ficha, vehiculo.nom, "PATIO (Manual)", `Cambió de ${estadoAnterior} a ${nuevoEstado}`, vehiculo.idCiclo);
+        await guardar();
+        renderPatio();
+    });
 }
 
 function renderPatio() {
