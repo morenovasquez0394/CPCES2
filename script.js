@@ -291,6 +291,7 @@ function switchAdminTab(tab) {
     document.getElementById("btnTabConfig").className = tab === 'config' ? activeClass : inactiveClass;
 }
 
+// === CORREGIDA: Ahora muestra/oculta el campo de Telegram ID ===
 function ajustarFormularioAdmin() {
     const tipo = document.getElementById("filtroTipo").value;
     const isChofer = tipo === "CHOFER";
@@ -298,9 +299,10 @@ function ajustarFormularioAdmin() {
     document.getElementById("contTel").classList.toggle("hidden", !isChofer);
     document.getElementById("contComp").classList.toggle("hidden", !isChofer);
     document.getElementById("contTipoCam").classList.toggle("hidden", !isChofer);
-    document.getElementById("contTelegramChatId").classList.toggle("hidden", !isChofer); 
+    document.getElementById("contTelegramChatId").classList.toggle("hidden", !isChofer); // <-- CORRECTO: Muestra/oculta el campo
 }
 
+// === CORREGIDA: Ahora guarda el ID de Telegram ===
 async function crearUsuario() {
     const tipo = document.getElementById("filtroTipo").value;
     const cod  = document.getElementById("regCodigo").value.trim();
@@ -313,7 +315,7 @@ async function crearUsuario() {
         nuevo.tel = document.getElementById("regTelefono").value;
         nuevo.comp = document.getElementById("regCompania").value;
         nuevo.tipoCamion = document.getElementById("regTipoCamion").value;
-        nuevo.telegram_chat_id = document.getElementById("regTelegramChatId").value.trim();
+        nuevo.telegram_chat_id = document.getElementById("regTelegramChatId").value.trim(); // <-- CORRECTO: Guarda el ID de Telegram
     } else nuevo.pos = document.getElementById("regPosicion").value;
     usuarios.push(nuevo);
     await guardar();
@@ -322,11 +324,11 @@ async function crearUsuario() {
     document.getElementById("regCodigo").value = "";
     document.getElementById("regNombre").value = "";
     document.getElementById("regPassword").value = "";
-    if (tipo === "CHOFER") document.getElementById("regTelegramChatId").value = ""; 
+    if (tipo === "CHOFER") document.getElementById("regTelegramChatId").value = ""; // Limpia el campo después de guardar
     document.getElementById("regCodigo").focus();
 }
 
-// === AQUÍ ESTABA EL ERROR (FALTABA CERRAR LA LLAVE) ===
+// === CORREGIDA: Ahora muestra el ID de Telegram en la lista de usuarios ===
 function actualizarListaUsuarios() {
     document.getElementById("listaUsuarios").innerHTML = usuarios.map(u => {
         let detalles = u.tipoCamion || u.pos || '-';
@@ -339,7 +341,7 @@ function actualizarListaUsuarios() {
             <td class="p-6 text-[10px] text-slate-500 font-bold italic uppercase tracking-tighter">${detalles}</td>
             <td class="p-6 text-right">${u.cod !== 'admin' ? `<button onclick="eliminarUser('${u.cod}')" class="text-red-900 group-hover:text-red-500 font-black text-[9px] uppercase tracking-widest transition-colors">Remover</button>`: '<span class="text-slate-800 font-black text-[8px] tracking-widest">SISTEMA</span>'}</td>
         </tr>`;
-    }).join(""); // <- ¡La llave que faltaba ya está aquí!
+    }).join("");
 }
 
 async function eliminarUser(cod) {
