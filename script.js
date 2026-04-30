@@ -1,25 +1,40 @@
 // --- START OF FILE script.js ---
 
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzf62YCzWmjWGZtxIUhHUJNIyYJrrOEDK2XpMLpSORo9YkzkQLUYmLMGMf2X4bQRESMDw/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzRIah2cEw0zR3RooaFs-T5-oGcJDAGVLew0UkTuaeG-ZfvWbV3g7cgLrO0F2O6T7Y1Uw/exec';
 
-// 🔔 TELEGRAM INTEGRADO
-const TELEGRAM_TOKEN = "8583613125:AAHzBuNxZeb-NXzM8v57rJNmE4PBoFnpUMc"; 
-const TELEGRAM_CHAT_ID = "6708256846";
+// 🔔 TELEGRAM INTEGRADO (Ahora el frontend DELEGA el envío al Google Apps Script)
+// Estos datos YA NO SE USAN aquí directamente para el envío.
+// Son solo para referencia si se quisieran otras acciones desde el frontend.
+// La lógica de envío está ahora en Google Apps Script para mayor seguridad.
+// const TELEGRAM_TOKEN = "8583613125:AAHzBuNxZeb-NXzM8v57rJNmE4PBoFnpUMc"; 
+// const TELEGRAM_CHAT_ID = "6708256846"; 
 
-async function enviarTelegram(mensaje){
-    if(!TELEGRAM_TOKEN || !TELEGRAM_CHAT_ID) return;
+/**
+ * Envía un mensaje de Telegram a través del Google Apps Script.
+ * @param {string} mensaje El mensaje a enviar.
+ * @param {string} fichaDestino La ficha del chofer a quien se envía el mensaje.
+ */
+async function enviarTelegram(mensaje, fichaDestino = null){
+    if (!fichaDestino) {
+        console.warn("enviarTelegram llamado sin fichaDestino. Mensaje no enviado.");
+        return; // No se envía si no hay un destinatario específico
+    }
     try {
-        await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
-            method: "POST",
-            headers: {"Content-Type": "application/json"},
-            body: JSON.stringify({
-                chat_id: TELEGRAM_CHAT_ID,
-                text: mensaje,
-                parse_mode: "HTML"
-            })
+        const payload = {
+            action: "sendTelegram", // Esta acción le dice a Apps Script que envíe un Telegram
+            ficha: fichaDestino,
+            message: mensaje
+        };
+        await fetch(SCRIPT_URL, {
+            method: 'POST',
+            mode: 'cors',
+            credentials: 'omit',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify(payload)
         });
+        console.log(`Notificación de Telegram enviada a ${fichaDestino} via Apps Script.`);
     } catch(e) {
-        console.error("Telegram error:", e);
+        console.error("Error al enviar Telegram via Apps Script:", e);
     }
 }
 
@@ -282,6 +297,7 @@ function switchAdminTab(tab) {
     document.getElementById("btnTabConfig").className = tab === 'config' ? activeClass : inactiveClass;
 }
 
+// === MODIFICADA: Ahora muestra/oculta el campo de Telegram ID ===
 function ajustarFormularioAdmin() {
     const tipo = document.getElementById("filtroTipo").value;
     const isChofer = tipo === "CHOFER";
@@ -289,8 +305,10 @@ function ajustarFormularioAdmin() {
     document.getElementById("contTel").classList.toggle("hidden", !isChofer);
     document.getElementById("contComp").classList.toggle("hidden", !isChofer);
     document.getElementById("contTipoCam").classList.toggle("hidden", !isChofer);
+    document.getElementById("contTelegramChatId").classList.toggle("hidden", !isChofer); // <-- NUEVO: Muestra/oculta el campo
 }
 
+// === MODIFICADA: Ahora guarda el ID de Telegram ===
 async function crearUsuario() {
     const tipo = document.getElementById("filtroTipo").value;
     const cod  = document.getElementById("regCodigo").value.trim();
@@ -303,6 +321,7 @@ async function crearUsuario() {
         nuevo.tel = document.getElementById("regTelefono").value;
         nuevo.comp = document.getElementById("regCompania").value;
         nuevo.tipoCamion = document.getElementById("regTipoCamion").value;
+        nuevo.telegram_chat_id = document.getElementById("regTelegramChatId").value.trim(); // <-- NUEVO: Guarda el ID de Telegram
     } else nuevo.pos = document.getElementById("regPosicion").value;
     usuarios.push(nuevo);
     await guardar();
@@ -311,11 +330,23 @@ async function crearUsuario() {
     document.getElementById("regCodigo").value = "";
     document.getElementById("regNombre").value = "";
     document.getElementById("regPassword").value = "";
+    if (tipo === "CHOFER") document.getElementById("regTelegramChatId").value = ""; // Limpia el campo después de guardar
     document.getElementById("regCodigo").focus();
 }
 
+// === MODIFICADA: Ahora muestra el ID de Telegram en la lista de usuarios ===
 function actualizarListaUsuarios() {
-    document.getElementById("listaUsuarios").innerHTML = usuarios.map(u => `<tr class="hover:bg-slate-800/20 transition-all group"><td class="p-6"><span class="font-mono font-black text-blue-400 bg-blue-500/5 px-4 py-2 rounded-xl border border-blue-500/10">${u.cod}</span></td><td class="p-6"><div class="font-black text-slate-200 text-sm uppercase">${u.nom}</div><div class="text-[9px] text-slate-600 uppercase tracking-widest font-bold">${u.rol}</div></td><td class="p-6 text-[10px] text-slate-500 font-bold italic uppercase tracking-tighter">${u.tipoCamion || u.pos || '-'}</td><td class="p-6 text-right">${u.cod !== 'admin' ? `<button onclick="eliminarUser('${u.cod}')" class="text-red-900 group-hover:text-red-500 font-black text-[9px] uppercase tracking-widest transition-colors">Remover</button>`: '<span class="text-slate-800 font-black text-[8px] tracking-widest">SISTEMA</span>'}</td></tr>`).join("");
+    document.getElementById("listaUsuarios").innerHTML = usuarios.map(u => {
+        let detalles = u.tipoCamion || u.pos || '-';
+        if (u.rol === "CHOFER" && u.telegram_chat_id) {
+            detalles += `<br><span class="text-purple-400">ID TG: ${u.telegram_chat_id}</span>`; // Muestra el ID de Telegram
+        }
+        return `<tr class="hover:bg-slate-800/20 transition-all group">
+            <td class="p-6"><span class="font-mono font-black text-blue-400 bg-blue-500/5 px-4 py-2 rounded-xl border border-blue-500/10">${u.cod}</span></td>
+            <td class="p-6"><div class="font-black text-slate-200 text-sm uppercase">${u.nom}</div><div class="text-[9px] text-slate-600 uppercase tracking-widest font-bold">${u.rol}</div></td>
+            <td class="p-6 text-[10px] text-slate-500 font-bold italic uppercase tracking-tighter">${detalles}</td>
+            <td class="p-6 text-right">${u.cod !== 'admin' ? `<button onclick="eliminarUser('${u.cod}')" class="text-red-900 group-hover:text-red-500 font-black text-[9px] uppercase tracking-widest transition-colors">Remover</button>`: '<span class="text-slate-800 font-black text-[8px] tracking-widest">SISTEMA</span>'}</td>
+        </tr>`).join("");
 }
 
 async function eliminarUser(cod) {
@@ -392,7 +423,7 @@ async function validarYRegistrar() {
                 vehiculoEnPatio.rampa = null;
             }
             vehiculoEnPatio.estado = "ENVIADO_A_TIENDA"; 
-            msg.innerHTML = `<span class='text-cyan-400 tracking-widest'>SALIDA OK: ${vehiculoEnPatio.nom.split(' ')[0]}</span>`;
+            msg.innerHTML = `<span class='text-cyan-400 tracking-widest'>SALIDA OK: ${vehiculoEnPativo.nom.split(' ')[0]}</span>`;
             esSalidaValida = true;
             tiemposCiclos.unshift({ fecha: fh.fecha, ficha: ficha, ciclo: vehiculoEnPatio.idCiclo, hora_llegada: vehiculoEnPatio.hora, tiempo_patio: calcularDiferenciaMinutos(tEntrada, tLlegadaRampa), tiempo_rampa: calcularDiferenciaMinutos(tLlegadaRampa, tFinCarga), tiempo_cargado: calcularDiferenciaMinutos(tFinCarga, tAhora), hora_salida: fh.hora });
         } else {
@@ -440,8 +471,6 @@ function renderHistorialGarita() {
         return `<div class="glass p-6 rounded-[2rem] flex justify-between items-center border-l-4 ${borderColor} ${bgColor} hover:bg-slate-800/40 transition-all mb-3"><div><span class="text-[11px] font-black text-white tracking-tighter uppercase">${h.user} <span class="text-slate-700 mx-2">|</span> ${h.tipo}</span><div class="text-[10px] italic historial-item font-bold mt-1 uppercase tracking-tight">${h.nom} - <span class="${textColor} font-black">${etiqueta}</span></div></div><div class="text-right"><div class="text-[8px] font-black text-slate-500 mb-1 tracking-widest uppercase">${fechaLimpia}</div><div class="text-sm font-black text-slate-300">${h.hora}</div></div></div>`;
     }).join("");
 }
-
-// === FUNCIONES FALTANTES AÑADIDAS AQUÍ ===
 
 function abrirSelectorModal(titulo, opciones, callback) {
     const modal = document.getElementById('selectorModal');
@@ -548,6 +577,7 @@ function renderPatio() {
         if (u.estado === 'FUERA_DEL_RECINTO') ubicacionTexto = '—';
         
         const bgRow = index % 2 === 0 ? 'bg-white/[0.02]' : 'bg-transparent';
+        
         let truckIcon;
         if (u.tipo && u.tipo.toUpperCase().includes('FURGON SECO')) {
             truckIcon = '<span class="text-2xl">🚛</span>';
@@ -631,7 +661,7 @@ async function asignarRampa(ficha) {
         registrarAuditoria(ficha, patio[idx].nom, "PATIO", `Asignado a Rampa ${rNum}`, patio[idx].idCiclo);
         
         // 🔔 TELEGRAM: Enviar alerta
-        await enviarTelegram(`🚛 <b>NUEVA ASIGNACIÓN</b>\n\nLa unidad <b>${ficha}</b> ha sido asignada a la <b>Rampa ${rNum}</b>.`);
+        await enviarTelegram(`🚛 <b>NUEVA ASIGNACIÓN</b>\n\nLa unidad <b>${ficha}</b> ha sido asignada a la <b>Rampa ${rNum}</b>.`, ficha);
 
         const driverAlert = document.getElementById("driverAlert");
         if(driverAlert) {
@@ -735,7 +765,7 @@ async function finalizarCarga(r) {
         registrarAuditoria(patio[idx].user, patio[idx].nom, "DESPACHO", `Carga Finalizada en Rampa ${r} para ${tiendaFinal}`, patio[idx].idCiclo);
         
         // 🔔 TELEGRAM: Enviar alerta
-        await enviarTelegram(`📦 <b>CARGA FINALIZADA</b>\n\nLa unidad <b>${patio[idx].user}</b> está cargada en Rampa ${r}.\nDestino: <b>${tiendaFinal}</b>.`);
+        await enviarTelegram(`📦 <b>CARGA FINALIZADA</b>\n\nLa unidad <b>${patio[idx].user}</b> está cargada en Rampa ${r}.\nDestino: <b>${tiendaFinal}</b>.`, patio[idx].user);
 
         await guardar();
         renderDespacho();
@@ -822,7 +852,7 @@ async function choferConfirmaCarga() {
     registrarAuditoria(patio[idx].user, patio[idx].nom, "CHOFER", `Liberó Rampa ${rampaLiberada}`, patio[idx].idCiclo);
     
     // 🔔 TELEGRAM: Enviar alerta
-    await enviarTelegram(`✅ <b>SALIDA DE RAMPA</b>\n\nLa unidad <b>${patio[idx].user}</b> ha abandonado la Rampa ${rampaLiberada} y se dirige a Despacho.`);
+    await enviarTelegram(`✅ <b>SALIDA DE RAMPA</b>\n\nLa unidad <b>${patio[idx].user}</b> ha abandonado la Rampa ${rampaLiberada} y se dirige a Despacho.`, patio[idx].user);
 
     await guardar();
     cargarInfoChofer(); 
