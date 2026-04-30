@@ -2,7 +2,6 @@
 
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxxZOKfBuyFCONLU9sn5iVtwbd4TN3MksE-B0FLBYLnF9q_Rtukf3wt7PPheTfEOeo9qA/exec';
 
-// 🔔 TELEGRAM INTEGRADO (Ahora el frontend DELEGA el envío al Google Apps Script)
 async function enviarTelegram(mensaje, fichaDestino = null){
     if (!fichaDestino) {
         console.warn("enviarTelegram llamado sin fichaDestino. Mensaje no enviado.");
@@ -286,21 +285,14 @@ function switchAdminTab(tab) {
     document.getElementById("btnTabConfig").className = tab === 'config' ? activeClass : inactiveClass;
 }
 
-// ----------------------------------------------------
-// SECCIÓN MODIFICADA: GESTIÓN DE USUARIOS Y TELEGRAM
-// ----------------------------------------------------
-
 function ajustarFormularioAdmin() {
     const tipo = document.getElementById("filtroTipo").value;
     const isChofer = tipo === "CHOFER";
-    
     document.getElementById("contPos").classList.toggle("hidden", isChofer);
     document.getElementById("contTel").classList.toggle("hidden", !isChofer);
     document.getElementById("contComp").classList.toggle("hidden", !isChofer);
     document.getElementById("contTipoCam").classList.toggle("hidden", !isChofer);
-    
-    const contTG = document.getElementById("contTelegramChatId");
-    if (contTG) contTG.classList.toggle("hidden", !isChofer);
+    document.getElementById("contTelegramChatId").classList.toggle("hidden", !isChofer); 
 }
 
 async function crearUsuario() {
@@ -308,45 +300,23 @@ async function crearUsuario() {
     const cod  = document.getElementById("regCodigo").value.trim();
     const nom  = document.getElementById("regNombre").value.trim();
     const pass = document.getElementById("regPassword").value.trim(); 
+    if (!cod || !nom) return;
     
-    if (!cod || !nom) {
-        alert("Código y Nombre son obligatorios");
-        return;
-    }
-    
-    let nuevo = { 
-        cod, 
-        nom, 
-        rol: tipo, 
-        pass: pass, 
-        telegram_chat_id: "", 
-        tel: "", 
-        comp: "", 
-        tipoCamion: "", 
-        pos: "" 
-    }; 
-
+    let nuevo = { cod, nom, rol: tipo, pass: pass }; 
     if (tipo === "CHOFER") {
         nuevo.tel = document.getElementById("regTelefono").value;
         nuevo.comp = document.getElementById("regCompania").value;
         nuevo.tipoCamion = document.getElementById("regTipoCamion").value;
-        
-        const tgInput = document.getElementById("regTelegramChatId");
-        nuevo.telegram_chat_id = tgInput ? tgInput.value.trim() : ""; 
-    } else {
-        nuevo.pos = document.getElementById("regPosicion").value;
-    }
-
+        nuevo.telegram_chat_id = document.getElementById("regTelegramChatId").value.trim();
+    } else nuevo.pos = document.getElementById("regPosicion").value;
     usuarios.push(nuevo);
     await guardar();
     actualizarListaUsuarios();
-    
+    alert("VINCULADO.");
     document.getElementById("regCodigo").value = "";
     document.getElementById("regNombre").value = "";
     document.getElementById("regPassword").value = "";
-    if (document.getElementById("regTelegramChatId")) document.getElementById("regTelegramChatId").value = "";
-    
-    alert("Usuario vinculado correctamente.");
+    if (tipo === "CHOFER") document.getElementById("regTelegramChatId").value = ""; 
     document.getElementById("regCodigo").focus();
 }
 
@@ -376,8 +346,6 @@ function actualizarListaUsuarios() {
         </tr>`;
     }).join("");
 }
-
-// ----------------------------------------------------
 
 async function eliminarUser(cod) {
     if (confirm("¿Eliminar usuario?")) {
@@ -643,14 +611,297 @@ function renderPatio() {
         </tr>`;
     }).join("") || `<tr><td colspan="8" class="text-center text-slate-600 py-20 italic text-sm bg-slate-900/20 rounded-xl border border-dashed border-slate-700/50">No hay unidades activas en patio</td></tr>`;
     
-    // NOTA: Se cerró correctamente el HTML que estaba cortado en la línea final del código proporcionado.
-    if(document.getElementById("listaSolicitudesDespacho")) {
-        document.getElementById("listaSolicitudesDespacho").innerHTML = solicitudesDespacho.map(s => 
-            `<div class="bg-cyan-900/30 border border-cyan-500/20 p-3 rounded-lg text-[10px]">
-                <p class="text-cyan-400 font-black">RAMPA ${s.rampa}</p>
-                <p class="text-slate-400 font-bold">${s.tipoReq || 'CUALQUIERA'}</p>
-            </div>`
-        ).join("") || `<p class="text-slate-600 italic text-[10px]">Sin solicitudes pendientes</p>`;
+    document.getElementById("listaSolicitudesDespacho").innerHTML = solicitudesDespacho.map(s => `<div class="bg-cyan-900/30 border border-cyan-500/20 p-3 rounded-lg text-[10px]"><p class="text-cyan-400 font-black">RAMPA ${s.rampa}</p><p class="text-slate-400 font-bold">${s.tipoReq || 'CUALQUIERA'}</p></div>`).join("") || `<p class="text-slate-600 italic text-[10px]">Sin solicitudes pendientes</p>`;
+}
+
+async function asignarRampa(ficha) {
+    let opcionesRampas = [];
+    
+    for (let i = 1; i <= TOTAL_RAMPAS; i++) {
+        let st = rampas.find(r => r.rampa_id == i)?.status || "LIBRE";
+        let u = patio.find(p => p.rampa == i && p.estado !== "ENVIADO_A_TIENDA" && p.estado !== "FUERA_DEL_RECINTO");
+        let tieneSolicitud = solicitudesDespacho.find(s => s.rampa == i);
+        
+        let labelRight = "", classRight = "", prioridad = 4;
+
+        if (st === "AVERIADA") {
+            labelRight = "AVERIADA"; classRight = "text-red-400"; prioridad = 4;
+        } else if (u) {
+            labelRight = u.user; classRight = "text-emerald-400 font-black"; prioridad = 3;
+        } else {
+            if (tieneSolicitud) {
+                labelRight = `SOLICITUD: ${tieneSolicitud.tipoReq}`; classRight = "text-blue-400 font-black animate-pulse"; prioridad = 1;
+            } else {
+                labelRight = "VACÍA"; classRight = "text-slate-500"; prioridad = 2;
+            }
+        }
+
+        opcionesRampas.push({
+            value: i,
+            label: `<span class="flex justify-between items-center w-full"><span>RAMPA ${i}</span><span class="text-[9px] uppercase tracking-widest ${classRight}">${labelRight}</span></span>`,
+            prioridad: prioridad
+        });
+    }
+    
+    opcionesRampas.sort((a, b) => a.prioridad - b.prioridad);
+
+    abrirSelectorModal(`ASIGNAR RAMPA A ${ficha}`, opcionesRampas, async (rNum) => {
+        const idx = patio.findIndex(p => p.user === ficha);
+        patio[idx].estado = "ASIGNADO"; 
+        patio[idx].rampa = rNum;
+        patio[idx].lastUpdate = Date.now();
+        solicitudesDespacho = solicitudesDespacho.filter(s => s.rampa != rNum);
+        
+        const rIndex = rampas.findIndex(r => r.rampa_id == rNum);
+        if(rIndex !== -1) rampas[rIndex].status = "OCUPADA";
+        else rampas.push({rampa_id: rNum, status: "OCUPADA"});
+
+        registrarAuditoria(ficha, patio[idx].nom, "PATIO", `Asignado a Rampa ${rNum}`, patio[idx].idCiclo);
+        
+        // 🔔 TELEGRAM: Enviar alerta
+        await enviarTelegram(`🚛 <b>NUEVA ASIGNACIÓN</b>\n\nLa unidad <b>${ficha}</b> ha sido asignada a la <b>Rampa ${rNum}</b>.`, ficha);
+
+        const driverAlert = document.getElementById("driverAlert");
+        if(driverAlert) {
+            document.getElementById("driverMsg").innerText = `Notificación enviada al chofer de la unidad ${ficha}.`;
+            driverAlert.classList.remove("hidden");
+        }
+        
+        await guardar();
+        renderPatio();
+    });
+}
+
+function renderDespacho() {
+    const grid = document.getElementById("gridDespacho");
+    grid.innerHTML = "";
+    
+    for (let i = 1; i <= TOTAL_RAMPAS; i++) {
+        const u = patio.find(p => p.rampa == i && p.estado !== "ENVIADO_A_TIENDA" && p.estado !== "FUERA_DEL_RECINTO");
+        const rampaObj = rampas.find(r => r.rampa_id == i);
+        const st = rampaObj ? rampaObj.status : "LIBRE";
+        let content = "", cardStyle = "neon-card rounded-[2rem] p-6 text-center flex flex-col justify-center min-h-[140px] relative";
+
+        if (st === "AVERIADA") {
+            cardStyle += " neon-border-red";
+            content = `<div class="text-red-500 font-black text-sm">🛠️ AVERIADA</div><button onclick="setSt(${i},'LIBRE')" class="mt-3 text-[8px] underline text-slate-400 hover:text-white transition-colors">Reparar</button>`;
+        } else if (u) { 
+            const btnReasignar = `<button onclick="reasignarRampa('${u.user}', ${i})" class="absolute top-3 right-3 text-[10px] text-slate-500 hover:text-blue-400 font-bold">🔄 Mover</button>`;
+            if (u.estado === 'EN_RAMPA') {
+                cardStyle += " neon-border-emerald";
+                content = `${btnReasignar}<div class="text-emerald-400 font-black text-sm mt-2">${u.user}</div><div class="text-[9px] font-bold opacity-50 mt-0.5 uppercase truncate text-white">${u.nom.split(' ')[0]}</div><button onclick="finalizarCarga(${i})" class="mt-3 bg-emerald-600 hover:bg-emerald-500 w-full py-2 rounded-lg text-[9px] font-black uppercase transition-all active:scale-95 text-white border-none">Finalizar Carga</button>`;
+            } else if (u.estado === 'ASIGNADO') {
+                cardStyle += " neon-border-yellow animate-pulse";
+                content = `${btnReasignar}<div class="text-yellow-400 font-black text-sm mt-2">${u.user}</div><div class="text-[9px] font-bold opacity-50 mt-0.5 uppercase truncate text-white">${u.nom.split(' ')[0]}</div><div class="text-yellow-400 text-[8px] font-black mt-2">⌛ ESPERANDO LLEGADA</div>`;
+            } else if (u.estado === 'CARGA_LISTA') {
+                cardStyle += " neon-border-purple animate-pulse";
+                content = `${btnReasignar}<div class="text-purple-400 font-black text-sm mt-2">${u.user}</div><div class="text-[9px] font-bold opacity-50 mt-0.5 uppercase truncate text-white">${u.nom.split(' ')[0]}</div><div class="text-purple-400 text-[8px] font-black mt-2">⌛ ESPERANDO SALIDA</div>`;
+            } else {
+                cardStyle += " neon-border-red";
+                content = `<div class="text-red-400 font-black text-sm">${u.user}</div><div class="text-red-400 text-[8px] font-black mt-2">⚠️ ATASCADO</div>`;
+            }
+        } else {
+            const solicitud = solicitudesDespacho.find(s => s.rampa == i);
+            if (solicitud) cardStyle += " pulse-blue";
+            content = `<div class="font-black text-[10px] ${solicitud ? 'text-blue-400' : 'text-slate-600'}">${solicitud ? `🔵 SOLICITUD: ${solicitud.tipoReq}` : 'VACÍA'}</div><div class="flex gap-2 mt-4"><button onclick="setSt(${i},'SOLICITUD')" class="bg-blue-900/30 hover:bg-blue-900/60 text-blue-400 p-1 flex-1 rounded text-[7px] font-black uppercase transition-all border-none">Solicitar</button><button onclick="setSt(${i},'AVERIADA')" class="bg-red-900/30 hover:bg-red-900/60 text-red-400 p-1 flex-1 rounded text-[7px] font-black uppercase transition-all border-none">Avería</button></div>`;
+        }
+        grid.innerHTML += `<div class="${cardStyle}"><div class="text-[8px] font-black opacity-25 mb-2 uppercase tracking-widest text-left text-white">Rampa ${i}</div>${content}</div>`;
     }
 }
-// --- END OF FILE script.js ---
+
+async function setSt(i, s) {
+    const rampaIndex = rampas.findIndex(r => r.rampa_id == i);
+    if(rampaIndex !== -1) rampas[rampaIndex].status = s;
+    else rampas.push({rampa_id: i, status: s});
+    
+    if (s === "SOLICITUD") {
+        const tipoReq = prompt("¿Qué tipo de camión necesita? (Ej: Contenedor)", "");
+        if (!solicitudesDespacho.find(x => x.rampa == i)) {
+            solicitudesDespacho.push({ rampa: i, tipoReq: tipoReq || "CUALQUIERA" });
+            registrarAuditoria("N/A", "DESPACHO", "DESPACHO", `Solicitó Camión en Rampa ${i}`);
+        }
+    } else solicitudesDespacho = solicitudesDespacho.filter(x => x.rampa != i);
+    
+    await guardar();
+    renderDespacho();
+}
+
+async function reasignarRampa(ficha, rampaActual) {
+    const rampasOcupadas = patio.filter(p => p.rampa && p.estado !== "ENVIADO_A_TIENDA").map(p => parseInt(p.rampa));
+    const rampasLibres = Array.from({length: TOTAL_RAMPAS}, (_, i) => i + 1).filter(n => !rampasOcupadas.includes(n));
+    
+    const opts = rampasLibres.map(n => ({ value: n, label: `RAMPA ${n}` }));
+
+    abrirSelectorModal(`MOVER ${ficha} A:`, opts, async (n) => {
+        if(n === rampaActual) return;
+        const pIdx = patio.findIndex(p => p.user === ficha);
+        patio[pIdx].rampa = n;
+
+        const oldR = rampas.findIndex(r => r.rampa_id == rampaActual);
+        if(oldR !== -1) rampas[oldR].status = "LIBRE";
+        const newR = rampas.findIndex(r => r.rampa_id == n);
+        if(newR !== -1) rampas[newR].status = "OCUPADA";
+        else rampas.push({rampa_id: n, status: "OCUPADA"});
+
+        registrarAuditoria(ficha, patio[pIdx].nom, "DESPACHO", `Movido de Rampa ${rampaActual} a ${n}`, patio[pIdx].idCiclo);
+        await guardar();
+        renderDespacho();
+    });
+}
+
+async function finalizarCarga(r) {
+    const idx = patio.findIndex(p => p.rampa == r && p.estado !== "ENVIADO_A_TIENDA");
+    if (idx === -1) return;
+
+    const opts = TIENDAS_LIST.map(t => ({ value: t, label: t }));
+
+    abrirSelectorModal(`DESTINO PARA RAMPA ${r}`, opts, async (tiendaFinal) => {
+        patio[idx].estado = "CARGA_LISTA";
+        patio[idx].t_fin_carga = Date.now(); 
+        patio[idx].tienda = tiendaFinal; 
+        
+        registrarAuditoria(patio[idx].user, patio[idx].nom, "DESPACHO", `Carga Finalizada en Rampa ${r} para ${tiendaFinal}`, patio[idx].idCiclo);
+        
+        // 🔔 TELEGRAM: Enviar alerta
+        await enviarTelegram(`📦 <b>CARGA FINALIZADA</b>\n\nLa unidad <b>${patio[idx].user}</b> está cargada en Rampa ${r}.\nDestino: <b>${tiendaFinal}</b>.`, patio[idx].user);
+
+        await guardar();
+        renderDespacho();
+    });
+}
+
+function reproducirAlerta() {
+    try {
+        const audio = new Audio('alerta.mp3');
+        audio.play().catch(e => console.log("El navegador bloqueó el sonido automático.", e));
+        
+        if (window.navigator && window.navigator.vibrate) {
+            window.navigator.vibrate([1000, 500, 1000]); 
+        }
+    } catch (error) {
+        console.error("Error al reproducir alerta:", error);
+    }
+}
+
+function cargarInfoChofer() {
+    if (!usuarioLogueado) return;
+    const vehiculo = patio.find(p => p.user === usuarioLogueado.cod && p.estado !== "ENVIADO_A_TIENDA" && p.estado !== "FUERA_DEL_RECINTO");
+    document.getElementById("infoChoferNombre").innerText = usuarioLogueado.nom;
+    const infoDiv = document.getElementById("infoChofer"), accionDiv = document.getElementById("accionChofer");
+
+    let estadoActual = vehiculo ? vehiculo.estado : "FUERA";
+    
+    if (estadoChoferAnterior !== null && estadoChoferAnterior !== estadoActual) {
+        if (estadoActual === "ASIGNADO" || estadoActual === "CARGA_LISTA") {
+            reproducirAlerta(); 
+        }
+    }
+    
+    estadoChoferAnterior = estadoActual;
+
+    if (!vehiculo) {
+        infoDiv.innerHTML = '<span class="text-slate-500 text-base font-bold">Fuera de Recinto / En Tienda</span>';
+        accionDiv.innerHTML = '';
+        return;
+    }
+
+    switch (vehiculo.estado) {
+        case "EN_PATIO":
+            infoDiv.innerHTML = '<span class="text-blue-400">EN PATIO</span>'; accionDiv.innerHTML = '<p class="text-xs text-slate-500 mt-4">Aguarde asignación de rampa</p>'; break;
+        case "ASIGNADO":
+            infoDiv.innerHTML = `<span class="text-yellow-400 animate-pulse">¡ASIGNACIÓN!</span>`; accionDiv.innerHTML = `<div class="text-center space-y-4"><p class="text-lg text-slate-200">Diríjase a la <b class="text-yellow-400 text-2xl">Rampa ${vehiculo.rampa}</b></p><button onclick="choferConfirmaAsignacion()" class="w-full bg-yellow-500 hover:bg-yellow-400 text-black font-black py-4 rounded-2xl text-lg uppercase shadow-xl active:scale-95 transition-transform">He llegado a la rampa</button></div>`; break;
+        case "EN_RAMPA":
+            infoDiv.innerHTML = `<span class="text-emerald-400">EN RAMPA ${vehiculo.rampa}</span>`; accionDiv.innerHTML = '<p class="text-xs text-slate-500 mt-4">Proceso de carga en curso...</p>'; break;
+        case "CARGA_LISTA":
+            infoDiv.innerHTML = `<span class="text-purple-400 animate-pulse">¡CARGA LISTA!</span>`; 
+            accionDiv.innerHTML = `<div class="text-center space-y-4">
+                <p class="text-lg text-slate-200">Su carga en <b class="text-purple-400 text-2xl">Rampa ${vehiculo.rampa}</b> finalizó.</p>
+                <p class="text-base text-slate-300">Destino: <b class="text-white">${vehiculo.tienda || 'No especificado'}</b></p>
+                <button onclick="choferConfirmaCarga()" class="w-full bg-purple-500 hover:bg-purple-400 text-white font-black py-4 rounded-2xl text-lg uppercase shadow-xl active:scale-95 transition-transform border-none">Confirmar Salida</button>
+            </div>`; 
+            break;
+        case "CARGADO":
+            infoDiv.innerHTML = `<span class="text-orange-400">CARGADO</span>`; accionDiv.innerHTML = '<p class="text-xs text-slate-400 mt-4">Diríjase a la garita para registrar su salida.</p>'; break;
+    }
+}
+
+async function choferConfirmaAsignacion() {
+    const idx = patio.findIndex(p => p.user === usuarioLogueado.cod && p.estado !== "ENVIADO_A_TIENDA");
+    if (idx === -1 || patio[idx].estado !== 'ASIGNADO') return;
+    patio[idx].estado = 'EN_RAMPA';
+    patio[idx].t_llegada_rampa = Date.now(); 
+    patio[idx].lastUpdate = Date.now();
+    const rampaIndex = rampas.findIndex(r => r.rampa_id == patio[idx].rampa);
+    if(rampaIndex !== -1) rampas[rampaIndex].status = "OCUPADA";
+    registrarAuditoria(patio[idx].user, patio[idx].nom, "CHOFER", `Llegó a Rampa ${patio[idx].rampa}`, patio[idx].idCiclo);
+    await guardar();
+    cargarInfoChofer(); 
+}
+
+async function choferConfirmaCarga() {
+    const idx = patio.findIndex(p => p.user === usuarioLogueado.cod && p.estado !== "ENVIADO_A_TIENDA");
+    if (idx === -1 || patio[idx].estado !== 'CARGA_LISTA') return;
+    const rampaLiberada = patio[idx].rampa;
+    patio[idx].estado = 'CARGADO';
+    patio[idx].rampa = null; 
+    patio[idx].lastUpdate = Date.now();
+    const rampaIndex = rampas.findIndex(r => r.rampa_id == rampaLiberada);
+    if(rampaIndex !== -1) rampas[rampaIndex].status = "LIBRE";
+    registrarAuditoria(patio[idx].user, patio[idx].nom, "CHOFER", `Liberó Rampa ${rampaLiberada}`, patio[idx].idCiclo);
+    
+    // 🔔 TELEGRAM: Enviar alerta
+    await enviarTelegram(`✅ <b>SALIDA DE RAMPA</b>\n\nLa unidad <b>${patio[idx].user}</b> ha abandonado la Rampa ${rampaLiberada} y se dirige a Despacho.`, patio[idx].user);
+
+    await guardar();
+    cargarInfoChofer(); 
+}
+
+document.addEventListener('DOMContentLoaded', async () => { 
+    actualizarReloj(); 
+    
+    const btnLogin = document.getElementById("btnLogin");
+    if(btnLogin) {
+        btnLogin.innerText = "⏳ CONECTANDO...";
+        btnLogin.disabled = true;
+        btnLogin.classList.add("opacity-50", "cursor-not-allowed");
+    }
+    
+    const savedUser = localStorage.getItem('cpces_user');
+    const savedModule = localStorage.getItem('cpces_modulo');
+    
+    if (savedUser) {
+        usuarioLogueado = JSON.parse(savedUser);
+        document.getElementById("loginScreen").classList.add("hidden");
+        
+        document.getElementById("welcomeMsg").innerText = `OPERADOR: ${usuarioLogueado.nom} | ROL: ${usuarioLogueado.rol}`;
+        filtrarMenu(usuarioLogueado.rol);
+
+        if (!savedModule || savedModule === 'menu') {
+            document.getElementById("menuPrincipal").classList.remove("hidden");
+        }
+    }
+    
+    await cargar(true); 
+    
+    if(btnLogin) {
+        btnLogin.innerText = "INGRESAR";
+        btnLogin.disabled = false;
+        btnLogin.classList.remove("opacity-50", "cursor-not-allowed");
+        document.getElementById("loginError").innerText = ""; 
+    }
+    
+    if (usuarioLogueado && savedModule && savedModule !== 'menu') {
+        abrirModulo(savedModule);
+    }
+});
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./service-worker.js')
+      .then(registration => {
+        console.log('ServiceWorker registrado con éxito');
+      }, err => {
+        console.log('El registro del ServiceWorker falló: ', err);
+      });
+  });
+}
