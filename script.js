@@ -1,6 +1,6 @@
 // --- START OF FILE script.js ---
 
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxwFHSPDdEDNxGCyYzjUpaaqsjkOTG1G8rXvwNAnxOoep3WKkNOUTXya539QrGMH4OTFg/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyBGO96_Vvtna84xGKW31Xi0FodTiYFstUc_RPmXcq-tTRBbcYZoh_SMgiDZjd3xZYP2A/exec';
 
 async function enviarTelegram(mensaje, fichaDestino = null){
     if (!fichaDestino) {
@@ -658,7 +658,6 @@ async function asignarRampa(ficha) {
 
         registrarAuditoria(ficha, patio[idx].nom, "PATIO", `Asignado a Rampa ${rNum}`, patio[idx].idCiclo);
         
-        // 🔔 TELEGRAM: Enviar alerta
         await enviarTelegram(`🚛 <b>NUEVA ASIGNACIÓN</b>\n\nLa unidad <b>${ficha}</b> ha sido asignada a la <b>Rampa ${rNum}</b>.`, ficha);
 
         const driverAlert = document.getElementById("driverAlert");
