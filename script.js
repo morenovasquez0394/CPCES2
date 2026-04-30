@@ -1,14 +1,8 @@
 // --- START OF FILE script.js ---
 
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyBGO96_Vvtna84xGKW31Xi0FodTiYFstUc_RPmXcq-tTRBbcYZoh_SMgiDZjd3xZYP2A/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzf62YCzWmjWGZtxIUhHUJNIyYJrrOEDK2XpMLpSORo9YkzkQLUYmLMGMf2X4bQRESMDw/exec';
 
 // 🔔 TELEGRAM INTEGRADO (Ahora el frontend DELEGA el envío al Google Apps Script)
-// Estos datos YA NO SE USAN aquí directamente para el envío.
-// Son solo para referencia si se quisieran otras acciones desde el frontend.
-// La lógica de envío está ahora en Google Apps Script para mayor seguridad.
-// const TELEGRAM_TOKEN = "8583613125:AAHzBuNxZeb-NXzM8v57rJNmE4PBoFnpUMc"; 
-// const TELEGRAM_CHAT_ID = "6708256846"; 
-
 /**
  * Envía un mensaje de Telegram a través del Google Apps Script.
  * @param {string} mensaje El mensaje a enviar.
@@ -17,11 +11,11 @@ const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyBGO96_Vvtna84xGKW3
 async function enviarTelegram(mensaje, fichaDestino = null){
     if (!fichaDestino) {
         console.warn("enviarTelegram llamado sin fichaDestino. Mensaje no enviado.");
-        return; // No se envía si no hay un destinatario específico
+        return; 
     }
     try {
         const payload = {
-            action: "sendTelegram", // Esta acción le dice a Apps Script que envíe un Telegram
+            action: "sendTelegram",
             ficha: fichaDestino,
             message: mensaje
         };
@@ -180,7 +174,6 @@ function refrescarVistasActivas() {
     if (!document.getElementById("despacho").classList.contains("hidden")) renderDespacho();
     if (!document.getElementById("chofer").classList.contains("hidden")) cargarInfoChofer();
     if (!document.getElementById("admin").classList.contains("hidden")) renderAuditoria();
-    // Se asegura que renderHistorialGarita se llame cuando el módulo de garita está activo
     if (!document.getElementById("garita").classList.contains("hidden")) { renderHistorialGarita(); }
 }
 
@@ -333,6 +326,7 @@ async function crearUsuario() {
     document.getElementById("regCodigo").focus();
 }
 
+// === AQUÍ ESTABA EL ERROR (FALTABA CERRAR LA LLAVE) ===
 function actualizarListaUsuarios() {
     document.getElementById("listaUsuarios").innerHTML = usuarios.map(u => {
         let detalles = u.tipoCamion || u.pos || '-';
@@ -344,7 +338,8 @@ function actualizarListaUsuarios() {
             <td class="p-6"><div class="font-black text-slate-200 text-sm uppercase">${u.nom}</div><div class="text-[9px] text-slate-600 uppercase tracking-widest font-bold">${u.rol}</div></td>
             <td class="p-6 text-[10px] text-slate-500 font-bold italic uppercase tracking-tighter">${detalles}</td>
             <td class="p-6 text-right">${u.cod !== 'admin' ? `<button onclick="eliminarUser('${u.cod}')" class="text-red-900 group-hover:text-red-500 font-black text-[9px] uppercase tracking-widest transition-colors">Remover</button>`: '<span class="text-slate-800 font-black text-[8px] tracking-widest">SISTEMA</span>'}</td>
-        </tr>`).join("");
+        </tr>`;
+    }).join(""); // <- ¡La llave que faltaba ya está aquí!
 }
 
 async function eliminarUser(cod) {
