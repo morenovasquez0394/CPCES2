@@ -1,6 +1,6 @@
 // --- START OF FILE script.js ---
 
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwLJA8QrALz8MKDQ54U_rMz_0MYnULQui2dqK4Miounsr4osrBcgvI7I4fn0xzr4ndxwQ/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyBGO96_Vvtna84xGKW31Xi0FodTiYFstUc_RPmXcq-tTRBbcYZoh_SMgiDZjd3xZYP2A/exec';
 
 async function enviarTelegram(mensaje, fichaDestino = null){
     if (!fichaDestino) {
@@ -13,16 +13,35 @@ async function enviarTelegram(mensaje, fichaDestino = null){
             ficha: fichaDestino,
             message: mensaje
         };
-        await fetch(SCRIPT_URL, {
+        
+        console.log("Intentando enviar Telegram a Google Apps Script con payload:", payload);
+        
+        const response = await fetch(SCRIPT_URL, {
             method: 'POST',
             mode: 'cors',
-            credentials: 'omit',
+            credentials: 'omit', // Es crucial mantener esto en 'omit'
             headers: { 'Content-Type': 'text/plain;charset=utf-8' },
             body: JSON.stringify(payload)
         });
-        console.log(`Notificación de Telegram enviada a ${fichaDestino} via Apps Script.`);
+        
+        // Verificamos si la respuesta del servidor fue OK (status 200)
+        if (!response.ok) {
+            throw new Error(`Error en la solicitud al servidor. Estado: ${response.status} ${response.statusText}`);
+        }
+        
+        // Intentamos leer la respuesta de Google
+        const responseData = await response.json();
+        console.log(`Respuesta de Google al enviar Telegram:`, responseData);
+        
+        if(responseData.status === "error"){
+            console.error("Google Apps Script reportó un error al enviar el Telegram:", responseData.message);
+        } else {
+            console.log(`Notificación de Telegram enviada con éxito a ${fichaDestino}.`);
+        }
+
     } catch(e) {
-        console.error("Error al enviar Telegram via Apps Script:", e);
+        console.error("Fallo crítico al intentar hacer el fetch para Telegram:", e);
+        alert("Hubo un problema de conexión al intentar enviar la notificación de Telegram. Revisa la consola (F12).");
     }
 }
 
@@ -63,12 +82,28 @@ async function guardar() {
     setUILoading(true);
     try {
         const dataPayload = { usuarios, patio, historialEntradas, solicitudesDespacho, rampas, auditoria, tiemposCiclos, configuracion };
-        await fetch(SCRIPT_URL, {
-            method: 'POST', mode: 'cors', credentials: 'omit',
+        
+        console.log("Intentando guardar datos en Google Apps Script...");
+        
+        const response = await fetch(SCRIPT_URL, {
+            method: 'POST',
+            mode: 'cors',
+            credentials: 'omit', // Es crucial mantener esto en 'omit'
             headers: { 'Content-Type': 'text/plain;charset=utf-8' },
             body: JSON.stringify(dataPayload)
         });
-    } catch (error) { console.error("Error al guardar:", error); } 
+        
+        if (!response.ok) {
+            throw new Error(`Error HTTP al guardar. Estado: ${response.status}`);
+        }
+        
+        const responseData = await response.json();
+        console.log("Respuesta de Google al guardar:", responseData);
+        
+    } catch (error) { 
+        console.error("Fallo crítico al hacer fetch para guardar:", error); 
+        alert("No se pudieron guardar los cambios. Revisa tu conexión a internet o la consola de errores.");
+    } 
     finally { setUILoading(false); }
 }
 
@@ -77,7 +112,7 @@ async function cargar(silencioso = false) {
     try {
         const urlFetch = serverLastUpdate ? `${SCRIPT_URL}?lastUpdate=${serverLastUpdate}` : SCRIPT_URL;
         const response = await fetch(urlFetch);
-        if (!response.ok) throw new Error("Error red");
+        if (!response.ok) throw new Error(`Error red al cargar: ${response.status}`);
         const data = await response.json();
         
         if (data.changed === false) return;
@@ -119,7 +154,7 @@ async function cargar(silencioso = false) {
         }
 
     } catch (error) { 
-        console.error("Error al cargar:", error); 
+        console.error("Fallo al cargar datos desde Google:", error); 
     } 
     finally { if (!silencioso) setUILoading(false); }
 }
@@ -761,7 +796,6 @@ async function finalizarCarga(r) {
         
         registrarAuditoria(patio[idx].user, patio[idx].nom, "DESPACHO", `Carga Finalizada en Rampa ${r} para ${tiendaFinal}`, patio[idx].idCiclo);
         
-        // 🔔 TELEGRAM: Enviar alerta
         await enviarTelegram(`📦 <b>CARGA FINALIZADA</b>\n\nLa unidad <b>${patio[idx].user}</b> está cargada en Rampa ${r}.\nDestino: <b>${tiendaFinal}</b>.`, patio[idx].user);
 
         await guardar();
@@ -848,7 +882,6 @@ async function choferConfirmaCarga() {
     if(rampaIndex !== -1) rampas[rampaIndex].status = "LIBRE";
     registrarAuditoria(patio[idx].user, patio[idx].nom, "CHOFER", `Liberó Rampa ${rampaLiberada}`, patio[idx].idCiclo);
     
-    // 🔔 TELEGRAM: Enviar alerta
     await enviarTelegram(`✅ <b>SALIDA DE RAMPA</b>\n\nLa unidad <b>${patio[idx].user}</b> ha abandonado la Rampa ${rampaLiberada} y se dirige a Despacho.`, patio[idx].user);
 
     await guardar();
