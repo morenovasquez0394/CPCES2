@@ -1,6 +1,6 @@
 // --- START OF FILE script.js ---
 
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzf62YCzWmjWGZtxIUhHUJNIyYJrrOEDK2XpMLpSORo9YkzkQLUYmLMGMf2X4bQRESMDw/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyBGO96_Vvtna84xGKW31Xi0FodTiYFstUc_RPmXcq-tTRBbcYZoh_SMgiDZjd3xZYP2A/exec';
 
 // 🔔 TELEGRAM INTEGRADO (Ahora el frontend DELEGA el envío al Google Apps Script)
 // Estos datos YA NO SE USAN aquí directamente para el envío.
