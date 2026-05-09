@@ -526,6 +526,7 @@ function togglePanelPatio() {
 }
 
 function renderPatio() {
+    // --- LÓGICA DE FILTRADO Y KPIs LATERALES (SIN CAMBIOS) ---
     const filtro = (document.getElementById("filtro_patio_general") ? document.getElementById("filtro_patio_general").value : "").toLowerCase();
     
     const kpiPatioList = (estados) => {
@@ -541,26 +542,29 @@ function renderPatio() {
         html += `<li class="border-t border-white/10 mt-2 pt-2 flex justify-between items-center"><span class="text-slate-500">Total</span><span class="text-white font-black">${f.length}</span></li>`;
         return html;
     };
-    
     document.getElementById("listaKpiPatio").innerHTML = kpiPatioList(["EN_PATIO", "ASIGNADO"]);
     document.getElementById("listaKpiRampa").innerHTML = kpiPatioList(["EN_RAMPA", "CARGA_LISTA", "CARGADO"]);
     document.getElementById("listaKpiTienda").innerHTML = kpiPatioList(["ENVIADO_A_TIENDA"]);
 
-    // CÁLCULO DE VIAJES CORREGIDO
-    const hoyStr = getFechaString();
-    const viajesHoy = historialEntradas.filter(h => {
-        if(h.estado !== 'ENVIADO_A_TIENDA') return false;
-        let fechaRegistro = h.fecha;
-        if (fechaRegistro && fechaRegistro.includes('T')) {
-             fechaRegistro = fechaRegistro.split('T')[0];
-             let partes = fechaRegistro.split('-');
-             if(partes.length === 3) fechaRegistro = `${partes[2]}/${partes[1]}/${partes[0]}`;
-        }
-        return fechaRegistro === hoyStr;
-    }).length;
+    // --- PUNTO 1: LÓGICA DE CÁLCULO DE VIAJES (BLINDADA CONTRA FORMATOS) ---
+    const hoy = new Date();
+    const hoyStr = `${hoy.getFullYear()}-${(hoy.getMonth() + 1).toString().padStart(2, '0')}-${hoy.getDate().toString().padStart(2, '0')}`;
 
+    const viajesHoy = historialEntradas.filter(h => {
+        if (h.estado !== 'ENVIADO_A_TIENDA' || !h.fecha) return false;
+        
+        // Convertir la fecha del registro (sea cual sea su formato) a un objeto Date
+        const fechaRegistro = new Date(h.fecha);
+        // Formatear esa fecha a YYYY-MM-DD para una comparación segura
+        const fechaRegistroStr = `${fechaRegistro.getFullYear()}-${(fechaRegistro.getMonth() + 1).toString().padStart(2, '0')}-${fechaRegistro.getDate().toString().padStart(2, '0')}`;
+        
+        return fechaRegistroStr === hoyStr;
+    }).length;
+    
     if(document.getElementById("kpiViajes")) document.getElementById("kpiViajes").innerText = viajesHoy;
 
+
+    // --- LÓGICA DE LA TABLA (SIN CAMBIOS) ---
     const prioridadOrden = { "EN_PATIO": 1, "ASIGNADO": 2, "EN_RAMPA": 3, "CARGA_LISTA": 4, "CARGADO": 5, "ENVIADO_A_TIENDA": 6, "FUERA_DEL_RECINTO": 7 };
     const listado = patio.filter(u => {
         const estadoLabel = (ESTADOS_UI[u.estado] || {}).label || u.estado;
@@ -636,7 +640,6 @@ function renderPatio() {
         ).join("") || `<p class="text-slate-600 italic text-[10px]">Sin solicitudes pendientes</p>`;
     }
 }
-
 async function asignarRampa(ficha) {
     let opcionesRampas = [];
     
