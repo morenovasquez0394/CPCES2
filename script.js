@@ -115,6 +115,7 @@ async function guardarAjustesSistema() {
     if (!document.getElementById("despacho").classList.contains("hidden")) renderDespacho();
 }
 
+// Función auxiliar para obtener el string de la fecha en formato local (DD/MM/YYYY)
 function getFechaString() {
     const d = new Date();
     let mes = (d.getMonth() + 1).toString().padStart(2, '0');
@@ -125,7 +126,10 @@ function getFechaString() {
 
 function formatoFechaHora() {
     const d = new Date();
-    return { fecha: getFechaString(), hora: d.toLocaleTimeString('en-US', { hour:'2-digit', minute:'2-digit', hour12:true }) };
+    return { 
+        fecha: getFechaString(), 
+        hora: d.toLocaleTimeString('en-US', { hour:'2-digit', minute:'2-digit', hour12:true }) 
+    };
 }
 
 function actualizarReloj() {
@@ -232,7 +236,7 @@ function abrirModulo(m) {
     document.getElementById("tituloModulo").innerText = m.toUpperCase();
     actualizarReloj();
     
-    // Ocultar/Mostrar KPI Header
+    // PUNTO 4: Controlar visibilidad del KPI del Header
     if (m === 'patio') {
         document.getElementById("kpiViajesHeaderContainer").classList.remove("hidden");
         renderPatio();
@@ -402,6 +406,7 @@ async function validarYRegistrar() {
                 vehiculoEnPatio.rampa = null;
             }
             vehiculoEnPatio.estado = "ENVIADO_A_TIENDA"; 
+            // PUNTO 1: ASEGURA QUE LA FECHA SEA LA DE HOY AL SALIR
             vehiculoEnPatio.fecha = getFechaString();
             msg.innerHTML = `<span class='text-cyan-400 tracking-widest'>SALIDA OK: ${vehiculoEnPatio.nom.split(' ')[0]}</span>`; 
             esSalidaValida = true;
@@ -514,19 +519,20 @@ function togglePanelPatio() {
     const panel = document.getElementById("panelResumenPatio");
     const btnMostrar = document.getElementById("btnMostrarPanel");
     
-    if (panel.classList.contains("hidden")) {
-        panel.classList.remove("hidden");
-        panel.classList.add("flex");
-        btnMostrar.classList.add("hidden");
+    // Toggle para ocultar o mostrar
+    panel.classList.toggle("hidden");
+    btnMostrar.classList.toggle("hidden");
+    
+    // Ajustar el texto del botón de ocultar
+    const toggleButton = panel.querySelector("button[onclick='togglePanelPatio()']");
+    if(panel.classList.contains("hidden")){
+        toggleButton.innerHTML = '▶'; // Cambia a flecha para mostrar
     } else {
-        panel.classList.add("hidden");
-        panel.classList.remove("flex");
-        btnMostrar.classList.remove("hidden");
+        toggleButton.innerHTML = '◀'; // Vuelve a flecha para ocultar
     }
 }
 
 function renderPatio() {
-    // --- LÓGICA DE FILTRADO Y KPIs LATERALES (SIN CAMBIOS) ---
     const filtro = (document.getElementById("filtro_patio_general") ? document.getElementById("filtro_patio_general").value : "").toLowerCase();
     
     const kpiPatioList = (estados) => {
@@ -546,25 +552,23 @@ function renderPatio() {
     document.getElementById("listaKpiRampa").innerHTML = kpiPatioList(["EN_RAMPA", "CARGA_LISTA", "CARGADO"]);
     document.getElementById("listaKpiTienda").innerHTML = kpiPatioList(["ENVIADO_A_TIENDA"]);
 
-    // --- PUNTO 1: LÓGICA DE CÁLCULO DE VIAJES (BLINDADA CONTRA FORMATOS) ---
-    const hoy = new Date();
-    const hoyStr = `${hoy.getFullYear()}-${(hoy.getMonth() + 1).toString().padStart(2, '0')}-${hoy.getDate().toString().padStart(2, '0')}`;
-
-    const viajesHoy = historialEntradas.filter(h => {
-        if (h.estado !== 'ENVIADO_A_TIENDA' || !h.fecha) return false;
-        
-        // Convertir la fecha del registro (sea cual sea su formato) a un objeto Date
-        const fechaRegistro = new Date(h.fecha);
-        // Formatear esa fecha a YYYY-MM-DD para una comparación segura
-        const fechaRegistroStr = `${fechaRegistro.getFullYear()}-${(fechaRegistro.getMonth() + 1).toString().padStart(2, '0')}-${fechaRegistro.getDate().toString().padStart(2, '0')}`;
-        
-        return fechaRegistroStr === hoyStr;
-    }).length;
+    // PUNTO 1: Lógica Corregida de Viajes Despachados
+    const hoyStr = getFechaString();
     
+    const viajesHoy = historialEntradas.filter(h => {
+        if(h.estado !== 'ENVIADO_A_TIENDA') return false;
+        
+        let fechaRegistro = h.fecha;
+        if (fechaRegistro && fechaRegistro.includes('T')) {
+             fechaRegistro = fechaRegistro.split('T')[0];
+             let partes = fechaRegistro.split('-');
+             if(partes.length === 3) fechaRegistro = `${partes[2]}/${partes[1]}/${partes[0]}`;
+        }
+        return fechaRegistro === hoyStr;
+    }).length;
+
     if(document.getElementById("kpiViajes")) document.getElementById("kpiViajes").innerText = viajesHoy;
 
-
-    // --- LÓGICA DE LA TABLA (SIN CAMBIOS) ---
     const prioridadOrden = { "EN_PATIO": 1, "ASIGNADO": 2, "EN_RAMPA": 3, "CARGA_LISTA": 4, "CARGADO": 5, "ENVIADO_A_TIENDA": 6, "FUERA_DEL_RECINTO": 7 };
     const listado = patio.filter(u => {
         const estadoLabel = (ESTADOS_UI[u.estado] || {}).label || u.estado;
@@ -640,6 +644,7 @@ function renderPatio() {
         ).join("") || `<p class="text-slate-600 italic text-[10px]">Sin solicitudes pendientes</p>`;
     }
 }
+
 async function asignarRampa(ficha) {
     let opcionesRampas = [];
     
