@@ -40,9 +40,7 @@ async function guardar() {
     try {
         const dataPayload = { usuarios, patio, historialEntradas, solicitudesDespacho, rampas, auditoria, tiemposCiclos, configuracion };
         await fetch(SCRIPT_URL, {
-            method: 'POST',
-            mode: 'cors',
-            credentials: 'omit',
+            method: 'POST', mode: 'cors', credentials: 'omit',
             headers: { 'Content-Type': 'text/plain;charset=utf-8' },
             body: JSON.stringify(dataPayload)
         });
@@ -115,7 +113,6 @@ async function guardarAjustesSistema() {
     if (!document.getElementById("despacho").classList.contains("hidden")) renderDespacho();
 }
 
-// Función auxiliar para obtener el string de la fecha en formato local (DD/MM/YYYY)
 function getFechaString() {
     const d = new Date();
     let mes = (d.getMonth() + 1).toString().padStart(2, '0');
@@ -406,7 +403,6 @@ async function validarYRegistrar() {
                 vehiculoEnPatio.rampa = null;
             }
             vehiculoEnPatio.estado = "ENVIADO_A_TIENDA"; 
-            // PUNTO 1: ASEGURA QUE LA FECHA SEA LA DE HOY AL SALIR
             vehiculoEnPatio.fecha = getFechaString();
             msg.innerHTML = `<span class='text-cyan-400 tracking-widest'>SALIDA OK: ${vehiculoEnPatio.nom.split(' ')[0]}</span>`; 
             esSalidaValida = true;
@@ -514,21 +510,16 @@ async function cambiarEstadoManualmente(ficha) {
     });
 }
 
-// === FUNCIÓN PARA OCULTAR/MOSTRAR PANEL PATIO ===
 function togglePanelPatio() {
     const panel = document.getElementById("panelResumenPatio");
     const btnMostrar = document.getElementById("btnMostrarPanel");
     
-    // Toggle para ocultar o mostrar
     panel.classList.toggle("hidden");
     btnMostrar.classList.toggle("hidden");
     
-    // Ajustar el texto del botón de ocultar
     const toggleButton = panel.querySelector("button[onclick='togglePanelPatio()']");
-    if(panel.classList.contains("hidden")){
-        toggleButton.innerHTML = '▶'; // Cambia a flecha para mostrar
-    } else {
-        toggleButton.innerHTML = '◀'; // Vuelve a flecha para ocultar
+    if (toggleButton) {
+        toggleButton.innerHTML = panel.classList.contains("hidden") ? '▶' : '◀';
     }
 }
 
@@ -548,23 +539,31 @@ function renderPatio() {
         html += `<li class="border-t border-white/10 mt-2 pt-2 flex justify-between items-center"><span class="text-slate-500">Total</span><span class="text-white font-black">${f.length}</span></li>`;
         return html;
     };
+    
     document.getElementById("listaKpiPatio").innerHTML = kpiPatioList(["EN_PATIO", "ASIGNADO"]);
     document.getElementById("listaKpiRampa").innerHTML = kpiPatioList(["EN_RAMPA", "CARGA_LISTA", "CARGADO"]);
     document.getElementById("listaKpiTienda").innerHTML = kpiPatioList(["ENVIADO_A_TIENDA"]);
 
-    // PUNTO 1: Lógica Corregida de Viajes Despachados
-    const hoyStr = getFechaString();
-    
+    const hoy = new Date();
+    const hoyStr = `${hoy.getFullYear()}-${(hoy.getMonth() + 1).toString().padStart(2, '0')}-${hoy.getDate().toString().padStart(2, '0')}`;
     const viajesHoy = historialEntradas.filter(h => {
-        if(h.estado !== 'ENVIADO_A_TIENDA') return false;
+        if (h.estado !== 'ENVIADO_A_TIENDA' || !h.fecha) return false;
         
-        let fechaRegistro = h.fecha;
-        if (fechaRegistro && fechaRegistro.includes('T')) {
-             fechaRegistro = fechaRegistro.split('T')[0];
-             let partes = fechaRegistro.split('-');
-             if(partes.length === 3) fechaRegistro = `${partes[2]}/${partes[1]}/${partes[0]}`;
+        let fechaRegistro;
+        try {
+            // Intenta tratarlo como DD/MM/YYYY
+            if (h.fecha.includes('/')) {
+                const partes = h.fecha.split('/');
+                fechaRegistro = new Date(`${partes[2]}-${partes[1]}-${partes[0]}`);
+            } else {
+                // Asume formato ISO (YYYY-MM-DD) o similar
+                fechaRegistro = new Date(h.fecha);
+            }
+            const fechaRegistroStr = `${fechaRegistro.getFullYear()}-${(fechaRegistro.getMonth() + 1).toString().padStart(2, '0')}-${fechaRegistro.getDate().toString().padStart(2, '0')}`;
+            return fechaRegistroStr === hoyStr;
+        } catch (e) {
+            return false;
         }
-        return fechaRegistro === hoyStr;
     }).length;
 
     if(document.getElementById("kpiViajes")) document.getElementById("kpiViajes").innerText = viajesHoy;
