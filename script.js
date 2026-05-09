@@ -42,13 +42,11 @@ async function guardar() {
         await fetch(SCRIPT_URL, {
             method: 'POST',
             mode: 'cors',
-            credentials: 'omit', 
+            credentials: 'omit',
             headers: { 'Content-Type': 'text/plain;charset=utf-8' },
             body: JSON.stringify(dataPayload)
         });
-    } catch (error) { 
-        console.error("Error al guardar:", error); 
-    } 
+    } catch (error) { console.error("Error al guardar:", error); } 
     finally { setUILoading(false); }
 }
 
@@ -117,7 +115,6 @@ async function guardarAjustesSistema() {
     if (!document.getElementById("despacho").classList.contains("hidden")) renderDespacho();
 }
 
-// Función auxiliar para obtener el string de la fecha en formato local (DD/MM/YYYY)
 function getFechaString() {
     const d = new Date();
     let mes = (d.getMonth() + 1).toString().padStart(2, '0');
@@ -128,10 +125,7 @@ function getFechaString() {
 
 function formatoFechaHora() {
     const d = new Date();
-    return { 
-        fecha: getFechaString(), 
-        hora: d.toLocaleTimeString('en-US', { hour:'2-digit', minute:'2-digit', hour12:true }) 
-    };
+    return { fecha: getFechaString(), hora: d.toLocaleTimeString('en-US', { hour:'2-digit', minute:'2-digit', hour12:true }) };
 }
 
 function actualizarReloj() {
@@ -238,7 +232,7 @@ function abrirModulo(m) {
     document.getElementById("tituloModulo").innerText = m.toUpperCase();
     actualizarReloj();
     
-    // Controlar visibilidad del KPI del Header según el módulo
+    // Ocultar/Mostrar KPI Header
     if (m === 'patio') {
         document.getElementById("kpiViajesHeaderContainer").classList.remove("hidden");
         renderPatio();
@@ -381,9 +375,7 @@ async function validarYRegistrar() {
         const vehiculoIndex = patio.findIndex(p => p.user === ficha);
         const nuevoIdCiclo = "CYC-" + Date.now().toString().slice(-6);
         patio[vehiculoIndex] = { ...patio[vehiculoIndex], idCiclo: nuevoIdCiclo, estado: "EN_PATIO", hora: fh.hora, fecha: fh.fecha, timestamp: Date.now(), lastUpdate: Date.now(), rampa: null, tienda: null, t_llegada_rampa: "", t_fin_carga: "" };
-        
-        historialEntradas.unshift({ ...patio[vehiculoIndex] }); // Añadimos al historial la ENTRADA
-        
+        historialEntradas.unshift({ ...patio[vehiculoIndex] });
         msg.innerHTML = `<span class='text-emerald-500 tracking-widest'>RE-INGRESO OK: ${patio[vehiculoIndex].nom.split(' ')[0]}</span>`;
         fichaInput.value = "";
         await guardar();
@@ -410,10 +402,7 @@ async function validarYRegistrar() {
                 vehiculoEnPatio.rampa = null;
             }
             vehiculoEnPatio.estado = "ENVIADO_A_TIENDA"; 
-            
-            // Asignamos la fecha exacta de salida al registro para que cuente como viaje despachado HOY
-            vehiculoEnPatio.fecha = fh.fecha; 
-
+            vehiculoEnPatio.fecha = getFechaString();
             msg.innerHTML = `<span class='text-cyan-400 tracking-widest'>SALIDA OK: ${vehiculoEnPatio.nom.split(' ')[0]}</span>`; 
             esSalidaValida = true;
             tiemposCiclos.unshift({ fecha: fh.fecha, ficha: ficha, ciclo: vehiculoEnPatio.idCiclo, hora_llegada: vehiculoEnPatio.hora, tiempo_patio: calcularDiferenciaMinutos(tEntrada, tLlegadaRampa), tiempo_rampa: calcularDiferenciaMinutos(tLlegadaRampa, tFinCarga), tiempo_cargado: calcularDiferenciaMinutos(tFinCarga, tAhora), hora_salida: fh.hora });
@@ -423,8 +412,7 @@ async function validarYRegistrar() {
 
         if (esSalidaValida) {
             const vehiculoIndex = patio.findIndex(p => p.user === ficha);
-            // IMPORTANTE: Al salir, guardamos en el historial con estado ENVIADO_A_TIENDA y la fecha de hoy
-            historialEntradas.unshift({...patio[vehiculoIndex]}); 
+            historialEntradas.unshift({...patio[vehiculoIndex]});
             await guardar();
             renderHistorialGarita();
         }
@@ -510,10 +498,9 @@ async function cambiarEstadoManualmente(ficha) {
         vehiculo.estado = nuevoEstado;
         vehiculo.lastUpdate = Date.now();
         
-        // Si lo pasamos manualmente a ENVIADO_A_TIENDA, aseguramos que tenga la fecha de hoy para el contador
         if(nuevoEstado === "ENVIADO_A_TIENDA") {
              vehiculo.fecha = getFechaString();
-             historialEntradas.unshift({...vehiculo}); // Añadimos al historial para que cuente como viaje
+             historialEntradas.unshift({...vehiculo}); 
         }
 
         registrarAuditoria(ficha, vehiculo.nom, "PATIO (Manual)", `Cambió de ${estadoAnterior} a ${nuevoEstado}`, vehiculo.idCiclo);
@@ -522,18 +509,16 @@ async function cambiarEstadoManualmente(ficha) {
     });
 }
 
-// === PUNTO 5: Función para ocultar/mostrar panel lateral de Patio ===
+// === FUNCIÓN PARA OCULTAR/MOSTRAR PANEL PATIO ===
 function togglePanelPatio() {
     const panel = document.getElementById("panelResumenPatio");
     const btnMostrar = document.getElementById("btnMostrarPanel");
     
     if (panel.classList.contains("hidden")) {
-        // Mostrar
         panel.classList.remove("hidden");
         panel.classList.add("flex");
         btnMostrar.classList.add("hidden");
     } else {
-        // Ocultar
         panel.classList.add("hidden");
         panel.classList.remove("flex");
         btnMostrar.classList.remove("hidden");
@@ -559,29 +544,21 @@ function renderPatio() {
     
     document.getElementById("listaKpiPatio").innerHTML = kpiPatioList(["EN_PATIO", "ASIGNADO"]);
     document.getElementById("listaKpiRampa").innerHTML = kpiPatioList(["EN_RAMPA", "CARGA_LISTA", "CARGADO"]);
-    
-    // PUNTO 2: Lista de Enviados a Tienda
     document.getElementById("listaKpiTienda").innerHTML = kpiPatioList(["ENVIADO_A_TIENDA"]);
 
-    // PUNTO 1: Lógica Corregida de Viajes Despachados
-    const hoyStr = getFechaString(); // "DD/MM/YYYY"
-    
-    // Contamos del historial todos los que sean ENVIADO_A_TIENDA y cuya fecha coincida con hoy
+    // CÁLCULO DE VIAJES CORREGIDO
+    const hoyStr = getFechaString();
     const viajesHoy = historialEntradas.filter(h => {
         if(h.estado !== 'ENVIADO_A_TIENDA') return false;
-        
         let fechaRegistro = h.fecha;
-        // Limpiamos la "T" de la base de datos por si acaso
         if (fechaRegistro && fechaRegistro.includes('T')) {
              fechaRegistro = fechaRegistro.split('T')[0];
-             // Invertir AAAA-MM-DD a DD/MM/AAAA para comparar
              let partes = fechaRegistro.split('-');
              if(partes.length === 3) fechaRegistro = `${partes[2]}/${partes[1]}/${partes[0]}`;
         }
         return fechaRegistro === hoyStr;
     }).length;
 
-    // PUNTO 4: El KPI está en la barra superior (el div id="kpiViajes" está ahí)
     if(document.getElementById("kpiViajes")) document.getElementById("kpiViajes").innerText = viajesHoy;
 
     const prioridadOrden = { "EN_PATIO": 1, "ASIGNADO": 2, "EN_RAMPA": 3, "CARGA_LISTA": 4, "CARGADO": 5, "ENVIADO_A_TIENDA": 6, "FUERA_DEL_RECINTO": 7 };
@@ -703,7 +680,6 @@ async function asignarRampa(ficha) {
         else rampas.push({rampa_id: rNum, status: "OCUPADA"});
 
         registrarAuditoria(ficha, patio[idx].nom, "PATIO", `Asignado a Rampa ${rNum}`, patio[idx].idCiclo);
-        
         await guardar();
         renderPatio();
     });
@@ -798,7 +774,6 @@ async function finalizarCarga(r) {
         patio[idx].tienda = tiendaFinal; 
         
         registrarAuditoria(patio[idx].user, patio[idx].nom, "DESPACHO", `Carga Finalizada en Rampa ${r} para ${tiendaFinal}`, patio[idx].idCiclo);
-        
         await guardar();
         renderDespacho();
     });
@@ -808,12 +783,8 @@ function reproducirAlerta() {
     try {
         const audio = new Audio('alerta.mp3');
         audio.play().catch(e => console.log("El navegador bloqueó el sonido automático.", e));
-        if (window.navigator && window.navigator.vibrate) {
-            window.navigator.vibrate([1000, 500, 1000]); 
-        }
-    } catch (error) {
-        console.error("Error al reproducir alerta:", error);
-    }
+        if (window.navigator && window.navigator.vibrate) window.navigator.vibrate([1000, 500, 1000]); 
+    } catch (error) { console.error("Error al reproducir alerta:", error); }
 }
 
 function cargarInfoChofer() {
@@ -825,11 +796,8 @@ function cargarInfoChofer() {
     let estadoActual = vehiculo ? vehiculo.estado : "FUERA";
     
     if (estadoChoferAnterior !== null && estadoChoferAnterior !== estadoActual) {
-        if (estadoActual === "ASIGNADO" || estadoActual === "CARGA_LISTA") {
-            reproducirAlerta(); 
-        }
+        if (estadoActual === "ASIGNADO" || estadoActual === "CARGA_LISTA") reproducirAlerta(); 
     }
-    
     estadoChoferAnterior = estadoActual;
 
     if (!vehiculo) {
@@ -839,22 +807,11 @@ function cargarInfoChofer() {
     }
 
     switch (vehiculo.estado) {
-        case "EN_PATIO":
-            infoDiv.innerHTML = '<span class="text-blue-400">EN PATIO</span>'; accionDiv.innerHTML = '<p class="text-xs text-slate-500 mt-4">Aguarde asignación de rampa</p>'; break;
-        case "ASIGNADO":
-            infoDiv.innerHTML = `<span class="text-yellow-400 animate-pulse">¡ASIGNACIÓN!</span>`; accionDiv.innerHTML = `<div class="text-center space-y-4"><p class="text-lg text-slate-200">Diríjase a la <b class="text-yellow-400 text-2xl">Rampa ${vehiculo.rampa}</b></p><button onclick="choferConfirmaAsignacion()" class="w-full bg-yellow-500 hover:bg-yellow-400 text-black font-black py-4 rounded-2xl text-lg uppercase shadow-xl active:scale-95 transition-transform">He llegado a la rampa</button></div>`; break;
-        case "EN_RAMPA":
-            infoDiv.innerHTML = `<span class="text-emerald-400">EN RAMPA ${vehiculo.rampa}</span>`; accionDiv.innerHTML = '<p class="text-xs text-slate-500 mt-4">Proceso de carga en curso...</p>'; break;
-        case "CARGA_LISTA":
-            infoDiv.innerHTML = `<span class="text-purple-400 animate-pulse">¡CARGA LISTA!</span>`; 
-            accionDiv.innerHTML = `<div class="text-center space-y-4">
-                <p class="text-lg text-slate-200">Su carga en <b class="text-purple-400 text-2xl">Rampa ${vehiculo.rampa}</b> finalizó.</p>
-                <p class="text-base text-slate-300">Destino: <b class="text-white">${vehiculo.tienda || 'No especificado'}</b></p>
-                <button onclick="choferConfirmaCarga()" class="w-full bg-purple-500 hover:bg-purple-400 text-white font-black py-4 rounded-2xl text-lg uppercase shadow-xl active:scale-95 transition-transform border-none">Confirmar Salida</button>
-            </div>`; 
-            break;
-        case "CARGADO":
-            infoDiv.innerHTML = `<span class="text-orange-400">CARGADO</span>`; accionDiv.innerHTML = '<p class="text-xs text-slate-400 mt-4">Diríjase a la garita para registrar su salida.</p>'; break;
+        case "EN_PATIO": infoDiv.innerHTML = '<span class="text-blue-400">EN PATIO</span>'; accionDiv.innerHTML = '<p class="text-xs text-slate-500 mt-4">Aguarde asignación de rampa</p>'; break;
+        case "ASIGNADO": infoDiv.innerHTML = `<span class="text-yellow-400 animate-pulse">¡ASIGNACIÓN!</span>`; accionDiv.innerHTML = `<div class="text-center space-y-4"><p class="text-lg text-slate-200">Diríjase a la <b class="text-yellow-400 text-2xl">Rampa ${vehiculo.rampa}</b></p><button onclick="choferConfirmaAsignacion()" class="w-full bg-yellow-500 hover:bg-yellow-400 text-black font-black py-4 rounded-2xl text-lg uppercase shadow-xl active:scale-95 transition-transform">He llegado a la rampa</button></div>`; break;
+        case "EN_RAMPA": infoDiv.innerHTML = `<span class="text-emerald-400">EN RAMPA ${vehiculo.rampa}</span>`; accionDiv.innerHTML = '<p class="text-xs text-slate-500 mt-4">Proceso de carga en curso...</p>'; break;
+        case "CARGA_LISTA": infoDiv.innerHTML = `<span class="text-purple-400 animate-pulse">¡CARGA LISTA!</span>`; accionDiv.innerHTML = `<div class="text-center space-y-4"><p class="text-lg text-slate-200">Su carga en <b class="text-purple-400 text-2xl">Rampa ${vehiculo.rampa}</b> finalizó.</p><p class="text-base text-slate-300">Destino: <b class="text-white">${vehiculo.tienda || 'No especificado'}</b></p><button onclick="choferConfirmaCarga()" class="w-full bg-purple-500 hover:bg-purple-400 text-white font-black py-4 rounded-2xl text-lg uppercase shadow-xl active:scale-95 transition-transform border-none">Confirmar Salida</button></div>`; break;
+        case "CARGADO": infoDiv.innerHTML = `<span class="text-orange-400">CARGADO</span>`; accionDiv.innerHTML = '<p class="text-xs text-slate-400 mt-4">Diríjase a la garita para registrar su salida.</p>'; break;
     }
 }
 
@@ -881,7 +838,6 @@ async function choferConfirmaCarga() {
     const rampaIndex = rampas.findIndex(r => r.rampa_id == rampaLiberada);
     if(rampaIndex !== -1) rampas[rampaIndex].status = "LIBRE";
     registrarAuditoria(patio[idx].user, patio[idx].nom, "CHOFER", `Liberó Rampa ${rampaLiberada}`, patio[idx].idCiclo);
-    
     await guardar();
     cargarInfoChofer(); 
 }
@@ -902,13 +858,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (savedUser) {
         usuarioLogueado = JSON.parse(savedUser);
         document.getElementById("loginScreen").classList.add("hidden");
-        
         document.getElementById("welcomeMsg").innerText = `OPERADOR: ${usuarioLogueado.nom} | ROL: ${usuarioLogueado.rol}`;
         filtrarMenu(usuarioLogueado.rol);
-
-        if (!savedModule || savedModule === 'menu') {
-            document.getElementById("menuPrincipal").classList.remove("hidden");
-        }
+        if (!savedModule || savedModule === 'menu') document.getElementById("menuPrincipal").classList.remove("hidden");
     }
     
     await cargar(true); 
@@ -920,18 +872,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById("loginError").innerText = ""; 
     }
     
-    if (usuarioLogueado && savedModule && savedModule !== 'menu') {
-        abrirModulo(savedModule);
-    }
+    if (usuarioLogueado && savedModule && savedModule !== 'menu') abrirModulo(savedModule);
 });
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('./service-worker.js')
-      .then(registration => {
-        console.log('ServiceWorker registrado con éxito');
-      }, err => {
-        console.log('El registro del ServiceWorker falló: ', err);
-      });
+      .then(registration => console.log('ServiceWorker registrado con éxito'), err => console.log('El registro del ServiceWorker falló: ', err));
   });
 }
