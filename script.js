@@ -2,49 +2,6 @@
 
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyBGO96_Vvtna84xGKW31Xi0FodTiYFstUc_RPmXcq-tTRBbcYZoh_SMgiDZjd3xZYP2A/exec';
 
-async function enviarTelegram(mensaje, fichaDestino = null){
-    if (!fichaDestino) {
-        console.warn("enviarTelegram llamado sin fichaDestino. Mensaje no enviado.");
-        return; 
-    }
-    try {
-        const payload = {
-            action: "sendTelegram",
-            ficha: fichaDestino,
-            message: mensaje
-        };
-        
-        console.log("Intentando enviar Telegram a Google Apps Script con payload:", payload);
-        
-        const response = await fetch(SCRIPT_URL, {
-            method: 'POST',
-            mode: 'cors',
-            credentials: 'omit', // Es crucial mantener esto en 'omit'
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-            body: JSON.stringify(payload)
-        });
-        
-        // Verificamos si la respuesta del servidor fue OK (status 200)
-        if (!response.ok) {
-            throw new Error(`Error en la solicitud al servidor. Estado: ${response.status} ${response.statusText}`);
-        }
-        
-        // Intentamos leer la respuesta de Google
-        const responseData = await response.json();
-        console.log(`Respuesta de Google al enviar Telegram:`, responseData);
-        
-        if(responseData.status === "error"){
-            console.error("Google Apps Script reportó un error al enviar el Telegram:", responseData.message);
-        } else {
-            console.log(`Notificación de Telegram enviada con éxito a ${fichaDestino}.`);
-        }
-
-    } catch(e) {
-        console.error("Fallo crítico al intentar hacer el fetch para Telegram:", e);
-        alert("Hubo un problema de conexión al intentar enviar la notificación de Telegram. Revisa la consola (F12).");
-    }
-}
-
 let usuarios = [];
 let patio = [];
 let historialEntradas = [];
@@ -82,27 +39,15 @@ async function guardar() {
     setUILoading(true);
     try {
         const dataPayload = { usuarios, patio, historialEntradas, solicitudesDespacho, rampas, auditoria, tiemposCiclos, configuracion };
-        
-        console.log("Intentando guardar datos en Google Apps Script...");
-        
-        const response = await fetch(SCRIPT_URL, {
+        await fetch(SCRIPT_URL, {
             method: 'POST',
             mode: 'cors',
-            credentials: 'omit', // Es crucial mantener esto en 'omit'
+            credentials: 'omit', 
             headers: { 'Content-Type': 'text/plain;charset=utf-8' },
             body: JSON.stringify(dataPayload)
         });
-        
-        if (!response.ok) {
-            throw new Error(`Error HTTP al guardar. Estado: ${response.status}`);
-        }
-        
-        const responseData = await response.json();
-        console.log("Respuesta de Google al guardar:", responseData);
-        
     } catch (error) { 
-        console.error("Fallo crítico al hacer fetch para guardar:", error); 
-        alert("No se pudieron guardar los cambios. Revisa tu conexión a internet o la consola de errores.");
+        console.error("Error al guardar:", error); 
     } 
     finally { setUILoading(false); }
 }
@@ -172,12 +117,21 @@ async function guardarAjustesSistema() {
     if (!document.getElementById("despacho").classList.contains("hidden")) renderDespacho();
 }
 
-function formatoFechaHora() {
+// Función auxiliar para obtener el string de la fecha en formato local (DD/MM/YYYY)
+function getFechaString() {
     const d = new Date();
     let mes = (d.getMonth() + 1).toString().padStart(2, '0');
     let dia = d.getDate().toString().padStart(2, '0');
     let anio = d.getFullYear();
-    return { fecha: `${dia}/${mes}/${anio}`, hora: d.toLocaleTimeString('en-US', { hour:'2-digit', minute:'2-digit', hour12:true }) };
+    return `${dia}/${mes}/${anio}`;
+}
+
+function formatoFechaHora() {
+    const d = new Date();
+    return { 
+        fecha: getFechaString(), 
+        hora: d.toLocaleTimeString('en-US', { hour:'2-digit', minute:'2-digit', hour12:true }) 
+    };
 }
 
 function actualizarReloj() {
@@ -284,9 +238,16 @@ function abrirModulo(m) {
     document.getElementById("tituloModulo").innerText = m.toUpperCase();
     actualizarReloj();
     
+    // Controlar visibilidad del KPI del Header según el módulo
+    if (m === 'patio') {
+        document.getElementById("kpiViajesHeaderContainer").classList.remove("hidden");
+        renderPatio();
+    } else {
+        document.getElementById("kpiViajesHeaderContainer").classList.add("hidden");
+    }
+    
     if (m === 'admin') { switchAdminTab('form'); actualizarListaUsuarios(); renderAuditoria(); }
     if (m === 'garita') { renderHistorialGarita(); }
-    if (m === 'patio') { renderPatio(); }
     if (m === 'despacho') renderDespacho();
     if (m === 'chofer') cargarInfoChofer();
 }
@@ -327,7 +288,6 @@ function ajustarFormularioAdmin() {
     document.getElementById("contTel").classList.toggle("hidden", !isChofer);
     document.getElementById("contComp").classList.toggle("hidden", !isChofer);
     document.getElementById("contTipoCam").classList.toggle("hidden", !isChofer);
-    document.getElementById("contTelegramChatId").classList.toggle("hidden", !isChofer); 
 }
 
 async function crearUsuario() {
@@ -342,7 +302,6 @@ async function crearUsuario() {
         nuevo.tel = document.getElementById("regTelefono").value;
         nuevo.comp = document.getElementById("regCompania").value;
         nuevo.tipoCamion = document.getElementById("regTipoCamion").value;
-        nuevo.telegram_chat_id = document.getElementById("regTelegramChatId").value.trim();
     } else nuevo.pos = document.getElementById("regPosicion").value;
     usuarios.push(nuevo);
     await guardar();
@@ -351,7 +310,6 @@ async function crearUsuario() {
     document.getElementById("regCodigo").value = "";
     document.getElementById("regNombre").value = "";
     document.getElementById("regPassword").value = "";
-    if (tipo === "CHOFER") document.getElementById("regTelegramChatId").value = ""; 
     document.getElementById("regCodigo").focus();
 }
 
@@ -361,18 +319,12 @@ function actualizarListaUsuarios() {
 
     lista.innerHTML = usuarios.map(u => {
         let detalles = u.tipoCamion || u.pos || '-';
-        
-        const tgBadge = (u.rol === "CHOFER" && u.telegram_chat_id) 
-            ? `<div class="text-[9px] text-purple-400 font-bold mt-1">🆔 TG: ${u.telegram_chat_id}</div>` 
-            : "";
-
         return `
         <tr class="hover:bg-slate-800/20 transition-all group">
             <td class="p-6"><span class="font-mono font-black text-blue-400 bg-blue-500/5 px-4 py-2 rounded-xl border border-blue-500/10">${u.cod}</span></td>
             <td class="p-6">
                 <div class="font-black text-slate-200 text-sm uppercase">${u.nom}</div>
                 <div class="text-[9px] text-slate-600 uppercase tracking-widest font-bold">${u.rol}</div>
-                ${tgBadge}
             </td>
             <td class="p-6 text-[10px] text-slate-500 font-bold italic uppercase tracking-tighter">${detalles}</td>
             <td class="p-6 text-right">
@@ -429,7 +381,9 @@ async function validarYRegistrar() {
         const vehiculoIndex = patio.findIndex(p => p.user === ficha);
         const nuevoIdCiclo = "CYC-" + Date.now().toString().slice(-6);
         patio[vehiculoIndex] = { ...patio[vehiculoIndex], idCiclo: nuevoIdCiclo, estado: "EN_PATIO", hora: fh.hora, fecha: fh.fecha, timestamp: Date.now(), lastUpdate: Date.now(), rampa: null, tienda: null, t_llegada_rampa: "", t_fin_carga: "" };
-        historialEntradas.unshift({ ...patio[vehiculoIndex] });
+        
+        historialEntradas.unshift({ ...patio[vehiculoIndex] }); // Añadimos al historial la ENTRADA
+        
         msg.innerHTML = `<span class='text-emerald-500 tracking-widest'>RE-INGRESO OK: ${patio[vehiculoIndex].nom.split(' ')[0]}</span>`;
         fichaInput.value = "";
         await guardar();
@@ -456,6 +410,10 @@ async function validarYRegistrar() {
                 vehiculoEnPatio.rampa = null;
             }
             vehiculoEnPatio.estado = "ENVIADO_A_TIENDA"; 
+            
+            // Asignamos la fecha exacta de salida al registro para que cuente como viaje despachado HOY
+            vehiculoEnPatio.fecha = fh.fecha; 
+
             msg.innerHTML = `<span class='text-cyan-400 tracking-widest'>SALIDA OK: ${vehiculoEnPatio.nom.split(' ')[0]}</span>`; 
             esSalidaValida = true;
             tiemposCiclos.unshift({ fecha: fh.fecha, ficha: ficha, ciclo: vehiculoEnPatio.idCiclo, hora_llegada: vehiculoEnPatio.hora, tiempo_patio: calcularDiferenciaMinutos(tEntrada, tLlegadaRampa), tiempo_rampa: calcularDiferenciaMinutos(tLlegadaRampa, tFinCarga), tiempo_cargado: calcularDiferenciaMinutos(tFinCarga, tAhora), hora_salida: fh.hora });
@@ -465,7 +423,8 @@ async function validarYRegistrar() {
 
         if (esSalidaValida) {
             const vehiculoIndex = patio.findIndex(p => p.user === ficha);
-            historialEntradas.unshift({...patio[vehiculoIndex]});
+            // IMPORTANTE: Al salir, guardamos en el historial con estado ENVIADO_A_TIENDA y la fecha de hoy
+            historialEntradas.unshift({...patio[vehiculoIndex]}); 
             await guardar();
             renderHistorialGarita();
         }
@@ -551,10 +510,34 @@ async function cambiarEstadoManualmente(ficha) {
         vehiculo.estado = nuevoEstado;
         vehiculo.lastUpdate = Date.now();
         
+        // Si lo pasamos manualmente a ENVIADO_A_TIENDA, aseguramos que tenga la fecha de hoy para el contador
+        if(nuevoEstado === "ENVIADO_A_TIENDA") {
+             vehiculo.fecha = getFechaString();
+             historialEntradas.unshift({...vehiculo}); // Añadimos al historial para que cuente como viaje
+        }
+
         registrarAuditoria(ficha, vehiculo.nom, "PATIO (Manual)", `Cambió de ${estadoAnterior} a ${nuevoEstado}`, vehiculo.idCiclo);
         await guardar();
         renderPatio();
     });
+}
+
+// === PUNTO 5: Función para ocultar/mostrar panel lateral de Patio ===
+function togglePanelPatio() {
+    const panel = document.getElementById("panelResumenPatio");
+    const btnMostrar = document.getElementById("btnMostrarPanel");
+    
+    if (panel.classList.contains("hidden")) {
+        // Mostrar
+        panel.classList.remove("hidden");
+        panel.classList.add("flex");
+        btnMostrar.classList.add("hidden");
+    } else {
+        // Ocultar
+        panel.classList.add("hidden");
+        panel.classList.remove("flex");
+        btnMostrar.classList.remove("hidden");
+    }
 }
 
 function renderPatio() {
@@ -573,12 +556,33 @@ function renderPatio() {
         html += `<li class="border-t border-white/10 mt-2 pt-2 flex justify-between items-center"><span class="text-slate-500">Total</span><span class="text-white font-black">${f.length}</span></li>`;
         return html;
     };
+    
     document.getElementById("listaKpiPatio").innerHTML = kpiPatioList(["EN_PATIO", "ASIGNADO"]);
     document.getElementById("listaKpiRampa").innerHTML = kpiPatioList(["EN_RAMPA", "CARGA_LISTA", "CARGADO"]);
     
-    const hoy = formatoFechaHora().fecha;
-    const viajesHoy = historialEntradas.filter(h => h.fecha === hoy && h.estado === 'ENVIADO_A_TIENDA').length;
-    document.getElementById("kpiViajes").innerText = viajesHoy;
+    // PUNTO 2: Lista de Enviados a Tienda
+    document.getElementById("listaKpiTienda").innerHTML = kpiPatioList(["ENVIADO_A_TIENDA"]);
+
+    // PUNTO 1: Lógica Corregida de Viajes Despachados
+    const hoyStr = getFechaString(); // "DD/MM/YYYY"
+    
+    // Contamos del historial todos los que sean ENVIADO_A_TIENDA y cuya fecha coincida con hoy
+    const viajesHoy = historialEntradas.filter(h => {
+        if(h.estado !== 'ENVIADO_A_TIENDA') return false;
+        
+        let fechaRegistro = h.fecha;
+        // Limpiamos la "T" de la base de datos por si acaso
+        if (fechaRegistro && fechaRegistro.includes('T')) {
+             fechaRegistro = fechaRegistro.split('T')[0];
+             // Invertir AAAA-MM-DD a DD/MM/AAAA para comparar
+             let partes = fechaRegistro.split('-');
+             if(partes.length === 3) fechaRegistro = `${partes[2]}/${partes[1]}/${partes[0]}`;
+        }
+        return fechaRegistro === hoyStr;
+    }).length;
+
+    // PUNTO 4: El KPI está en la barra superior (el div id="kpiViajes" está ahí)
+    if(document.getElementById("kpiViajes")) document.getElementById("kpiViajes").innerText = viajesHoy;
 
     const prioridadOrden = { "EN_PATIO": 1, "ASIGNADO": 2, "EN_RAMPA": 3, "CARGA_LISTA": 4, "CARGADO": 5, "ENVIADO_A_TIENDA": 6, "FUERA_DEL_RECINTO": 7 };
     const listado = patio.filter(u => {
@@ -598,7 +602,7 @@ function renderPatio() {
     });
 
     if(document.getElementById("totalVehiculosHeader")) {
-        document.getElementById("totalVehiculosHeader").innerText = `Total de Unidades: ${listado.length}`;
+        document.getElementById("totalVehiculosHeader").innerText = `Total: ${listado.length}`;
     }
 
     document.getElementById("tablaPatioCuerpo").innerHTML = listado.map((u, index) => {
@@ -646,7 +650,14 @@ function renderPatio() {
         </tr>`;
     }).join("") || `<tr><td colspan="8" class="text-center text-slate-600 py-20 italic text-sm bg-slate-900/20 rounded-xl border border-dashed border-slate-700/50">No hay unidades activas en patio</td></tr>`;
     
-    document.getElementById("listaSolicitudesDespacho").innerHTML = solicitudesDespacho.map(s => `<div class="bg-cyan-900/30 border border-cyan-500/20 p-3 rounded-lg text-[10px]"><p class="text-cyan-400 font-black">RAMPA ${s.rampa}</p><p class="text-slate-400 font-bold">${s.tipoReq || 'CUALQUIERA'}</p></div>`).join("") || `<p class="text-slate-600 italic text-[10px]">Sin solicitudes pendientes</p>`;
+    if(document.getElementById("listaSolicitudesDespacho")) {
+        document.getElementById("listaSolicitudesDespacho").innerHTML = solicitudesDespacho.map(s => 
+            `<div class="bg-cyan-900/30 border border-cyan-500/20 p-3 rounded-lg text-[10px]">
+                <p class="text-cyan-400 font-black">RAMPA ${s.rampa}</p>
+                <p class="text-slate-400 font-bold">${s.tipoReq || 'CUALQUIERA'}</p>
+            </div>`
+        ).join("") || `<p class="text-slate-600 italic text-[10px]">Sin solicitudes pendientes</p>`;
+    }
 }
 
 async function asignarRampa(ficha) {
@@ -692,14 +703,6 @@ async function asignarRampa(ficha) {
         else rampas.push({rampa_id: rNum, status: "OCUPADA"});
 
         registrarAuditoria(ficha, patio[idx].nom, "PATIO", `Asignado a Rampa ${rNum}`, patio[idx].idCiclo);
-        
-        await enviarTelegram(`🚛 <b>NUEVA ASIGNACIÓN</b>\n\nLa unidad <b>${ficha}</b> ha sido asignada a la <b>Rampa ${rNum}</b>.`, ficha);
-
-        const driverAlert = document.getElementById("driverAlert");
-        if(driverAlert) {
-            document.getElementById("driverMsg").innerText = `Notificación enviada al chofer de la unidad ${ficha}.`;
-            driverAlert.classList.remove("hidden");
-        }
         
         await guardar();
         renderPatio();
@@ -796,8 +799,6 @@ async function finalizarCarga(r) {
         
         registrarAuditoria(patio[idx].user, patio[idx].nom, "DESPACHO", `Carga Finalizada en Rampa ${r} para ${tiendaFinal}`, patio[idx].idCiclo);
         
-        await enviarTelegram(`📦 <b>CARGA FINALIZADA</b>\n\nLa unidad <b>${patio[idx].user}</b> está cargada en Rampa ${r}.\nDestino: <b>${tiendaFinal}</b>.`, patio[idx].user);
-
         await guardar();
         renderDespacho();
     });
@@ -807,7 +808,6 @@ function reproducirAlerta() {
     try {
         const audio = new Audio('alerta.mp3');
         audio.play().catch(e => console.log("El navegador bloqueó el sonido automático.", e));
-        
         if (window.navigator && window.navigator.vibrate) {
             window.navigator.vibrate([1000, 500, 1000]); 
         }
@@ -882,8 +882,6 @@ async function choferConfirmaCarga() {
     if(rampaIndex !== -1) rampas[rampaIndex].status = "LIBRE";
     registrarAuditoria(patio[idx].user, patio[idx].nom, "CHOFER", `Liberó Rampa ${rampaLiberada}`, patio[idx].idCiclo);
     
-    await enviarTelegram(`✅ <b>SALIDA DE RAMPA</b>\n\nLa unidad <b>${patio[idx].user}</b> ha abandonado la Rampa ${rampaLiberada} y se dirige a Despacho.`, patio[idx].user);
-
     await guardar();
     cargarInfoChofer(); 
 }
