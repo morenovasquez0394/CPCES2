@@ -1,5 +1,4 @@
 // --- START OF FILE script.js ---
-console.log("✅ EL SCRIPT.JS NUEVO SE HA CARGADO CORRECTAMENTE");
 
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyBGO96_Vvtna84xGKW31Xi0FodTiYFstUc_RPmXcq-tTRBbcYZoh_SMgiDZjd3xZYP2A/exec';
 
@@ -41,16 +40,12 @@ async function guardar() {
     try {
         const dataPayload = { usuarios, patio, historialEntradas, solicitudesDespacho, rampas, auditoria, tiemposCiclos, configuracion };
         const response = await fetch(SCRIPT_URL, {
-            method: 'POST',
-            mode: 'cors',
-            credentials: 'omit',
+            method: 'POST', mode: 'cors', credentials: 'omit',
             headers: { 'Content-Type': 'text/plain;charset=utf-8' },
             body: JSON.stringify(dataPayload)
         });
-        if (!response.ok) throw new Error(`Error HTTP al guardar. Estado: ${response.status}`);
-    } catch (error) { 
-        console.error("Fallo crítico al hacer fetch para guardar:", error); 
-    } 
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+    } catch (error) { console.error("Error al guardar:", error); } 
     finally { setUILoading(false); }
 }
 
@@ -59,7 +54,7 @@ async function cargar(silencioso = false) {
     try {
         const urlFetch = serverLastUpdate ? `${SCRIPT_URL}?lastUpdate=${serverLastUpdate}` : SCRIPT_URL;
         const response = await fetch(urlFetch);
-        if (!response.ok) throw new Error(`Error red al cargar: ${response.status}`);
+        if (!response.ok) throw new Error("Error red");
         const data = await response.json();
         
         if (data.changed === false) return;
@@ -101,7 +96,7 @@ async function cargar(silencioso = false) {
         }
 
     } catch (error) { 
-        console.error("Fallo al cargar datos desde Google:", error); 
+        console.error("Error al cargar:", error); 
     } 
     finally { if (!silencioso) setUILoading(false); }
 }
@@ -124,12 +119,18 @@ function getFechaString() {
     let mes = (d.getMonth() + 1).toString().padStart(2, '0');
     let dia = d.getDate().toString().padStart(2, '0');
     let anio = d.getFullYear();
-    return `${dia}/${mes}/${anio}`;
+    return `${anio}-${mes}-${dia}`; // Formato ISO simplificado para cálculos exactos
 }
 
 function formatoFechaHora() {
     const d = new Date();
-    return { fecha: getFechaString(), hora: d.toLocaleTimeString('en-US', { hour:'2-digit', minute:'2-digit', hour12:true }) };
+    let mes = (d.getMonth() + 1).toString().padStart(2, '0');
+    let dia = d.getDate().toString().padStart(2, '0');
+    let anio = d.getFullYear();
+    return { 
+        fecha: `${dia}/${mes}/${anio}`, // Formato visual DD/MM/AAAA
+        hora: d.toLocaleTimeString('en-US', { hour:'2-digit', minute:'2-digit', hour12:true }) 
+    };
 }
 
 function actualizarReloj() {
@@ -236,6 +237,7 @@ function abrirModulo(m) {
     document.getElementById("tituloModulo").innerText = m.toUpperCase();
     actualizarReloj();
     
+    // Solo mostrar el KPI del header si estamos en Patio
     if (m === 'patio') {
         document.getElementById("kpiViajesHeaderContainer").classList.remove("hidden");
         renderPatio();
@@ -253,7 +255,7 @@ function volverMenu() {
     localStorage.setItem('cpces_modulo', 'menu');
     app.classList.add("hidden"); 
     menuPrincipal.classList.remove("hidden"); 
-    document.getElementById("kpiViajesHeaderContainer").classList.add("hidden");
+    document.getElementById("kpiViajesHeaderContainer").classList.add("hidden"); // Ocultar KPI al volver
     if(usuarioLogueado) {
         document.getElementById("welcomeMsg").innerText = `OPERADOR: ${usuarioLogueado.nom} | ROL: ${usuarioLogueado.rol}`;
         filtrarMenu(usuarioLogueado.rol);
@@ -379,7 +381,9 @@ async function validarYRegistrar() {
         const vehiculoIndex = patio.findIndex(p => p.user === ficha);
         const nuevoIdCiclo = "CYC-" + Date.now().toString().slice(-6);
         patio[vehiculoIndex] = { ...patio[vehiculoIndex], idCiclo: nuevoIdCiclo, estado: "EN_PATIO", hora: fh.hora, fecha: fh.fecha, timestamp: Date.now(), lastUpdate: Date.now(), rampa: null, tienda: null, t_llegada_rampa: "", t_fin_carga: "" };
-        historialEntradas.unshift({ ...patio[vehiculoIndex] });
+        
+        historialEntradas.unshift({ ...patio[vehiculoIndex], fecha_despacho: null }); // Añadimos al historial
+        
         msg.innerHTML = `<span class='text-emerald-500 tracking-widest'>RE-INGRESO OK: ${patio[vehiculoIndex].nom.split(' ')[0]}</span>`;
         fichaInput.value = "";
         await guardar();
@@ -406,7 +410,10 @@ async function validarYRegistrar() {
                 vehiculoEnPatio.rampa = null;
             }
             vehiculoEnPatio.estado = "ENVIADO_A_TIENDA"; 
-            vehiculoEnPatio.fecha = getFechaString();
+            
+            // Estampamos la fecha exacta de salida en un campo nuevo para calcular viajes
+            vehiculoEnPatio.fecha_despacho = getFechaString();
+
             msg.innerHTML = `<span class='text-cyan-400 tracking-widest'>SALIDA OK: ${vehiculoEnPatio.nom.split(' ')[0]}</span>`; 
             esSalidaValida = true;
             tiemposCiclos.unshift({ fecha: fh.fecha, ficha: ficha, ciclo: vehiculoEnPatio.idCiclo, hora_llegada: vehiculoEnPatio.hora, tiempo_patio: calcularDiferenciaMinutos(tEntrada, tLlegadaRampa), tiempo_rampa: calcularDiferenciaMinutos(tLlegadaRampa, tFinCarga), tiempo_cargado: calcularDiferenciaMinutos(tFinCarga, tAhora), hora_salida: fh.hora });
@@ -431,7 +438,7 @@ async function validarYRegistrar() {
     }
     
     const nuevoIdCiclo = "CYC-" + Date.now().toString().slice(-6);
-    const entrada = { idCiclo: nuevoIdCiclo, user: ficha, nom: usuarioInfo.nom, tipo: usuarioInfo.tipoCamion || "RIGIDO", hora: fh.hora, fecha: fh.fecha, estado: "EN_PATIO", timestamp: Date.now(), lastUpdate: Date.now(), rampa: null, tienda: null, t_llegada_rampa: "", t_fin_carga: "" };
+    const entrada = { idCiclo: nuevoIdCiclo, user: ficha, nom: usuarioInfo.nom, tipo: usuarioInfo.tipoCamion || "RIGIDO", hora: fh.hora, fecha: fh.fecha, estado: "EN_PATIO", timestamp: Date.now(), lastUpdate: Date.now(), rampa: null, tienda: null, t_llegada_rampa: "", t_fin_carga: "", fecha_despacho: null };
     patio.push(entrada);
     historialEntradas.unshift({...entrada}); 
     
@@ -503,7 +510,7 @@ async function cambiarEstadoManualmente(ficha) {
         vehiculo.lastUpdate = Date.now();
         
         if(nuevoEstado === "ENVIADO_A_TIENDA") {
-             vehiculo.fecha = getFechaString();
+             vehiculo.fecha_despacho = getFechaString();
              historialEntradas.unshift({...vehiculo}); 
         }
 
@@ -552,19 +559,9 @@ function renderPatio() {
     document.getElementById("listaKpiRampa").innerHTML = kpiPatioList(["EN_RAMPA", "CARGA_LISTA", "CARGADO"]);
     document.getElementById("listaKpiTienda").innerHTML = kpiPatioList(["ENVIADO_A_TIENDA"]);
 
+    // CÁLCULO DE VIAJES CORREGIDO
     const hoyStr = getFechaString();
-    
-    const viajesHoy = historialEntradas.filter(h => {
-        if(h.estado !== 'ENVIADO_A_TIENDA') return false;
-        
-        let fechaRegistro = h.fecha;
-        if (fechaRegistro && fechaRegistro.includes('T')) {
-             fechaRegistro = fechaRegistro.split('T')[0];
-             let partes = fechaRegistro.split('-');
-             if(partes.length === 3) fechaRegistro = `${partes[2]}/${partes[1]}/${partes[0]}`;
-        }
-        return fechaRegistro === hoyStr;
-    }).length;
+    const viajesHoy = historialEntradas.filter(h => h.estado === 'ENVIADO_A_TIENDA' && h.fecha_despacho === hoyStr).length;
 
     if(document.getElementById("kpiViajes")) document.getElementById("kpiViajes").innerText = viajesHoy;
 
@@ -850,9 +847,7 @@ async function choferConfirmaCarga() {
 }
 
 document.addEventListener('DOMContentLoaded', async () => { 
-    // Para ver este mensaje en consola y confirmar que cargó
-    console.log("✅ EL SCRIPT.JS NUEVO SE HA CARGADO CORRECTAMENTE");
-
+    console.log("✅ SISTEMA INICIADO CORRECTAMENTE (SIN TELEGRAM, CON NUEVA LÓGICA DE FECHAS)");
     actualizarReloj(); 
     
     const btnLogin = document.getElementById("btnLogin");
