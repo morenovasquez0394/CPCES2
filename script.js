@@ -1,4 +1,5 @@
 // --- START OF FILE script.js ---
+console.log("✅ EL SCRIPT.JS NUEVO SE HA CARGADO CORRECTAMENTE");
 
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyBGO96_Vvtna84xGKW31Xi0FodTiYFstUc_RPmXcq-tTRBbcYZoh_SMgiDZjd3xZYP2A/exec';
 
@@ -235,7 +236,6 @@ function abrirModulo(m) {
     document.getElementById("tituloModulo").innerText = m.toUpperCase();
     actualizarReloj();
     
-    // Mostrar KPI en Header SOLO si es Patio
     if (m === 'patio') {
         document.getElementById("kpiViajesHeaderContainer").classList.remove("hidden");
         renderPatio();
@@ -253,7 +253,6 @@ function volverMenu() {
     localStorage.setItem('cpces_modulo', 'menu');
     app.classList.add("hidden"); 
     menuPrincipal.classList.remove("hidden"); 
-    // Ocultar KPI del header al volver al menú
     document.getElementById("kpiViajesHeaderContainer").classList.add("hidden");
     if(usuarioLogueado) {
         document.getElementById("welcomeMsg").innerText = `OPERADOR: ${usuarioLogueado.nom} | ROL: ${usuarioLogueado.rol}`;
@@ -407,7 +406,7 @@ async function validarYRegistrar() {
                 vehiculoEnPatio.rampa = null;
             }
             vehiculoEnPatio.estado = "ENVIADO_A_TIENDA"; 
-            vehiculoEnPatio.fecha = getFechaString(); // Guardar fecha normalizada al salir
+            vehiculoEnPatio.fecha = getFechaString();
             msg.innerHTML = `<span class='text-cyan-400 tracking-widest'>SALIDA OK: ${vehiculoEnPatio.nom.split(' ')[0]}</span>`; 
             esSalidaValida = true;
             tiemposCiclos.unshift({ fecha: fh.fecha, ficha: ficha, ciclo: vehiculoEnPatio.idCiclo, hora_llegada: vehiculoEnPatio.hora, tiempo_patio: calcularDiferenciaMinutos(tEntrada, tLlegadaRampa), tiempo_rampa: calcularDiferenciaMinutos(tLlegadaRampa, tFinCarga), tiempo_cargado: calcularDiferenciaMinutos(tFinCarga, tAhora), hora_salida: fh.hora });
@@ -504,7 +503,7 @@ async function cambiarEstadoManualmente(ficha) {
         vehiculo.lastUpdate = Date.now();
         
         if(nuevoEstado === "ENVIADO_A_TIENDA") {
-             vehiculo.fecha = getFechaString(); // Guardar fecha normalizada
+             vehiculo.fecha = getFechaString();
              historialEntradas.unshift({...vehiculo}); 
         }
 
@@ -520,13 +519,11 @@ function togglePanelPatio() {
     const btnMostrar = document.getElementById("btnMostrarPanel");
     
     if (panel.classList.contains("hidden")) {
-        // Muestra el panel izquierdo
         panel.classList.remove("hidden");
         panelDerecho.classList.remove("lg:col-span-12");
         panelDerecho.classList.add("lg:col-span-9");
         btnMostrar.classList.add("hidden");
     } else {
-        // Oculta el panel izquierdo y expande el derecho
         panel.classList.add("hidden");
         panelDerecho.classList.remove("lg:col-span-9");
         panelDerecho.classList.add("lg:col-span-12");
@@ -555,19 +552,18 @@ function renderPatio() {
     document.getElementById("listaKpiRampa").innerHTML = kpiPatioList(["EN_RAMPA", "CARGA_LISTA", "CARGADO"]);
     document.getElementById("listaKpiTienda").innerHTML = kpiPatioList(["ENVIADO_A_TIENDA"]);
 
-    // CÁLCULO DE VIAJES CORREGIDO Y BLINDADO
     const hoyStr = getFechaString();
+    
     const viajesHoy = historialEntradas.filter(h => {
-        if (h.estado !== 'ENVIADO_A_TIENDA' || !h.fecha) return false;
+        if(h.estado !== 'ENVIADO_A_TIENDA') return false;
         
-        let f = h.fecha;
-        // Limpiamos formato raro de Google (Ej: 2026-04-30T...)
-        if (f.includes('T')) {
-             f = f.split('T')[0]; // Se queda en 2026-04-30
-             const p = f.split('-');
-             if(p.length === 3) f = `${p[2]}/${p[1]}/${p[0]}`; // Lo convertimos a 30/04/2026
+        let fechaRegistro = h.fecha;
+        if (fechaRegistro && fechaRegistro.includes('T')) {
+             fechaRegistro = fechaRegistro.split('T')[0];
+             let partes = fechaRegistro.split('-');
+             if(partes.length === 3) fechaRegistro = `${partes[2]}/${partes[1]}/${partes[0]}`;
         }
-        return f === hoyStr; // Comparamos peras con peras
+        return fechaRegistro === hoyStr;
     }).length;
 
     if(document.getElementById("kpiViajes")) document.getElementById("kpiViajes").innerText = viajesHoy;
@@ -854,6 +850,9 @@ async function choferConfirmaCarga() {
 }
 
 document.addEventListener('DOMContentLoaded', async () => { 
+    // Para ver este mensaje en consola y confirmar que cargó
+    console.log("✅ EL SCRIPT.JS NUEVO SE HA CARGADO CORRECTAMENTE");
+
     actualizarReloj(); 
     
     const btnLogin = document.getElementById("btnLogin");
@@ -892,4 +891,3 @@ if ('serviceWorker' in navigator) {
       .then(registration => console.log('ServiceWorker registrado con éxito'), err => console.log('El registro del ServiceWorker falló: ', err));
   });
 }
-// --- END OF FILE script.js ---
