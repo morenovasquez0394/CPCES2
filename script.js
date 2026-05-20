@@ -198,7 +198,18 @@ async function syncManual() {
     refrescarVistasActivas();
 }
 
+// <<< CAMBIO: Función para actualizar KPIs globales como el del header >>>
+function actualizarKPIsGlobales() {
+    const kpiElement = document.getElementById("kpiViajes");
+    if (kpiElement) {
+        const hoy = formatoFechaHora().fecha;
+        const viajesHoy = historialEntradas.filter(h => h.fecha === hoy && h.estado === 'ENVIADO_A_TIENDA').length;
+        kpiElement.innerText = viajesHoy;
+    }
+}
+
 function refrescarVistasActivas() {
+    actualizarKPIsGlobales(); // <<< CAMBIO: Se llama a la función global de KPIs
     if (!document.getElementById("patio").classList.contains("hidden")) renderPatio();
     if (!document.getElementById("despacho").classList.contains("hidden")) renderDespacho();
     if (!document.getElementById("chofer").classList.contains("hidden")) cargarInfoChofer();
@@ -283,6 +294,7 @@ function abrirModulo(m) {
     document.getElementById(m).classList.remove("hidden");
     document.getElementById("tituloModulo").innerText = m.toUpperCase();
     actualizarReloj();
+    actualizarKPIsGlobales(); // <<< CAMBIO: Se llama a la función global de KPIs
     
     if (m === 'admin') { switchAdminTab('form'); actualizarListaUsuarios(); renderAuditoria(); }
     if (m === 'garita') { renderHistorialGarita(); }
@@ -576,10 +588,8 @@ function renderPatio() {
     document.getElementById("listaKpiPatio").innerHTML = kpiPatioList(["EN_PATIO", "ASIGNADO"]);
     document.getElementById("listaKpiRampa").innerHTML = kpiPatioList(["EN_RAMPA", "CARGA_LISTA", "CARGADO"]);
     
-    const hoy = formatoFechaHora().fecha;
-    const viajesHoy = historialEntradas.filter(h => h.fecha === hoy && h.estado === 'ENVIADO_A_TIENDA').length;
-    document.getElementById("kpiViajes").innerText = viajesHoy;
-
+    // <<< CAMBIO: La lógica del KPI de viajes se movió a una función global >>>
+    
     const prioridadOrden = { "EN_PATIO": 1, "ASIGNADO": 2, "EN_RAMPA": 3, "CARGA_LISTA": 4, "CARGADO": 5, "ENVIADO_A_TIENDA": 6, "FUERA_DEL_RECINTO": 7 };
     const listado = patio.filter(u => {
         const estadoLabel = (ESTADOS_UI[u.estado] || {}).label || u.estado;
