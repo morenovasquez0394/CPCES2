@@ -80,3 +80,38 @@ body { font-family: 'Inter', sans-serif; overflow-x: hidden; }
 #reader select { padding: 5px; border-radius: 5px; margin-bottom: 10px; }
 #reader { color: black !important; border: none !important; }
 --- END OF FILE style.css ---
+/* --- ESTILOS PARA EL KPI DE VIAJES EN EL HEADER --- */
+
+/* Contenedor principal del KPI */
+#viajes-despachados-header {
+    display: flex; /* <-- Importante para alinear horizontalmente */
+    align-items: center; /* Centra verticalmente el texto y el número */
+    gap: 1rem; /* Espacio entre el texto y el número */
+    padding: 0.5rem 1rem !important; /* Reduce el espacio interno para que sea más compacto */
+    /* La clase 'hidden' de Tailwind se usará para mostrarlo/ocultarlo */
+}
+
+/* Estilo para el texto "Viajes Despachados Hoy" */
+#viajes-despachados-header p {
+    margin-bottom: 0; /* Elimina el margen por defecto del párrafo */
+    line-height: 1; /* Ajusta la altura de línea */
+}
+
+/* Estilo para el número del contador */
+#viajes-despachados-header #kpiViajes {
+    font-size: 1.75rem; /* Reduce el tamaño del número (era 3xl) */
+    line-height: 1; /* Asegura que no ocupe espacio extra verticalmente */
+}
+
+/* --- AJUSTE PARA PANTALLAS PEQUEÑAS (MÓVILES) --- */
+@media (max-width: 768px) {
+    /* Oculta el texto en pantallas pequeñas para ahorrar espacio */
+    #viajes-despachados-header p {
+        display: none;
+    }
+    /* Reduce el padding y el gap cuando el texto desaparece */
+    #viajes-despachados-header {
+        gap: 0;
+        padding: 0.5rem 0.75rem !important;
+    }
+}
