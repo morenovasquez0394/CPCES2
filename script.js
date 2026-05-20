@@ -198,7 +198,6 @@ async function syncManual() {
     refrescarVistasActivas();
 }
 
-// <<< CAMBIO: Función para actualizar KPIs globales como el del header >>>
 function actualizarKPIsGlobales() {
     const kpiElement = document.getElementById("kpiViajes");
     if (kpiElement) {
@@ -209,7 +208,7 @@ function actualizarKPIsGlobales() {
 }
 
 function refrescarVistasActivas() {
-    actualizarKPIsGlobales(); // <<< CAMBIO: Se llama a la función global de KPIs
+    actualizarKPIsGlobales();
     if (!document.getElementById("patio").classList.contains("hidden")) renderPatio();
     if (!document.getElementById("despacho").classList.contains("hidden")) renderDespacho();
     if (!document.getElementById("chofer").classList.contains("hidden")) cargarInfoChofer();
@@ -294,14 +293,24 @@ function abrirModulo(m) {
     document.getElementById(m).classList.remove("hidden");
     document.getElementById("tituloModulo").innerText = m.toUpperCase();
     actualizarReloj();
-    actualizarKPIsGlobales(); // <<< CAMBIO: Se llama a la función global de KPIs
+    actualizarKPIsGlobales();
     
+    // ▼▼▼ INICIO DE LA MODIFICACIÓN ▼▼▼
+    // Controla la visibilidad del contador de viajes en el header.
+    const viajesHeader = document.getElementById('viajes-despachados-header');
+    if (viajesHeader) {
+        const esVisible = (m === 'patio' || m === 'despacho');
+        viajesHeader.classList.toggle('hidden', !esVisible);
+    }
+    // ▲▲▲ FIN DE LA MODIFICACIÓN ▲▲▲
+
     if (m === 'admin') { switchAdminTab('form'); actualizarListaUsuarios(); renderAuditoria(); }
     if (m === 'garita') { renderHistorialGarita(); }
     if (m === 'patio') { renderPatio(); }
     if (m === 'despacho') renderDespacho();
     if (m === 'chofer') cargarInfoChofer();
 }
+
 
 function volverMenu() { 
     localStorage.setItem('cpces_modulo', 'menu');
@@ -587,9 +596,7 @@ function renderPatio() {
     };
     document.getElementById("listaKpiPatio").innerHTML = kpiPatioList(["EN_PATIO", "ASIGNADO"]);
     document.getElementById("listaKpiRampa").innerHTML = kpiPatioList(["EN_RAMPA", "CARGA_LISTA", "CARGADO"]);
-    
-    // <<< CAMBIO: La lógica del KPI de viajes se movió a una función global >>>
-    
+        
     const prioridadOrden = { "EN_PATIO": 1, "ASIGNADO": 2, "EN_RAMPA": 3, "CARGA_LISTA": 4, "CARGADO": 5, "ENVIADO_A_TIENDA": 6, "FUERA_DEL_RECINTO": 7 };
     const listado = patio.filter(u => {
         const estadoLabel = (ESTADOS_UI[u.estado] || {}).label || u.estado;
