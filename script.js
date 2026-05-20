@@ -295,14 +295,11 @@ function abrirModulo(m) {
     actualizarReloj();
     actualizarKPIsGlobales();
     
-    // ▼▼▼ INICIO DE LA MODIFICACIÓN ▼▼▼
-    // Controla la visibilidad del contador de viajes en el header.
     const viajesHeader = document.getElementById('viajes-despachados-header');
     if (viajesHeader) {
         const esVisible = (m === 'patio' || m === 'despacho');
         viajesHeader.classList.toggle('hidden', !esVisible);
     }
-    // ▲▲▲ FIN DE LA MODIFICACIÓN ▲▲▲
 
     if (m === 'admin') { switchAdminTab('form'); actualizarListaUsuarios(); renderAuditoria(); }
     if (m === 'garita') { renderHistorialGarita(); }
@@ -310,7 +307,6 @@ function abrirModulo(m) {
     if (m === 'despacho') renderDespacho();
     if (m === 'chofer') cargarInfoChofer();
 }
-
 
 function volverMenu() { 
     localStorage.setItem('cpces_modulo', 'menu');
@@ -594,8 +590,11 @@ function renderPatio() {
         html += `<li class="border-t border-white/10 mt-2 pt-2 flex justify-between items-center"><span class="text-slate-500">Total</span><span class="text-white font-black">${f.length}</span></li>`;
         return html;
     };
+    
     document.getElementById("listaKpiPatio").innerHTML = kpiPatioList(["EN_PATIO", "ASIGNADO"]);
     document.getElementById("listaKpiRampa").innerHTML = kpiPatioList(["EN_RAMPA", "CARGA_LISTA", "CARGADO"]);
+    // <<< NUEVA LÍNEA AÑADIDA PARA POBLAR LA LISTA DE DESPACHADAS >>>
+    document.getElementById("listaKpiDespachadas").innerHTML = kpiPatioList(["ENVIADO_A_TIENDA"]);
         
     const prioridadOrden = { "EN_PATIO": 1, "ASIGNADO": 2, "EN_RAMPA": 3, "CARGA_LISTA": 4, "CARGADO": 5, "ENVIADO_A_TIENDA": 6, "FUERA_DEL_RECINTO": 7 };
     const listado = patio.filter(u => {
