@@ -2,37 +2,18 @@
 
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyBGO96_Vvtna84xGKW31Xi0FodTiYFstUc_RPmXcq-tTRBbcYZoh_SMgiDZjd3xZYP2A/exec';
 
-// ▼▼▼ NUEVA FUNCIÓN ROBUSTA PARA INTERPRETAR FECHAS ▼▼▼
-/**
- * Convierte un string de fecha en varios formatos a un objeto Date de JavaScript.
- * Es más robusto que new Date() por sí solo.
- * @param {string} dateStr - El string de fecha (ej. "20/05/2026", "2026-05-20").
- * @returns {Date|null} Un objeto Date si es válido, o null si no se puede interpretar.
- */
 function parseDateString(dateStr) {
-  if (!dateStr || typeof dateStr !== 'string') {
-    return null;
-  }
-
-  // Intenta interpretar el formato DD/MM/YYYY (común en latam)
+  if (!dateStr || typeof dateStr !== 'string') return null;
   const dmyMatch = dateStr.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/);
   if (dmyMatch) {
     const [, day, month, year] = dmyMatch;
-    // Ojo: En JS los meses son 0-11, por eso se resta 1.
     const date = new Date(year, month - 1, day);
     if (!isNaN(date.getTime())) return date;
   }
-  
-  // Como fallback, intenta un parseo general que funciona bien con formatos
-  // como YYYY-MM-DD, fechas ISO (con T), y formatos de EE.UU.
   const genericDate = new Date(dateStr);
-  if (!isNaN(genericDate.getTime())) {
-    return genericDate;
-  }
-
-  return null; // Si ningún formato funcionó
+  if (!isNaN(genericDate.getTime())) return genericDate;
+  return null;
 }
-// ▲▲▲ FIN DE LA NUEVA FUNCIÓN ▲▲▲
 
 
 async function enviarTelegram(mensaje, fichaDestino = null){
@@ -52,17 +33,15 @@ async function enviarTelegram(mensaje, fichaDestino = null){
         const response = await fetch(SCRIPT_URL, {
             method: 'POST',
             mode: 'cors',
-            credentials: 'omit', // Es crucial mantener esto en 'omit'
+            credentials: 'omit',
             headers: { 'Content-Type': 'text/plain;charset=utf-8' },
             body: JSON.stringify(payload)
         });
         
-        // Verificamos si la respuesta del servidor fue OK (status 200)
         if (!response.ok) {
             throw new Error(`Error en la solicitud al servidor. Estado: ${response.status} ${response.statusText}`);
         }
         
-        // Intentamos leer la respuesta de Google
         const responseData = await response.json();
         console.log(`Respuesta de Google al enviar Telegram:`, responseData);
         
@@ -115,24 +94,16 @@ async function guardar() {
     setUILoading(true);
     try {
         const dataPayload = { usuarios, patio, historialEntradas, solicitudesDespacho, rampas, auditoria, tiemposCiclos, configuracion };
-        
-        console.log("Intentando guardar datos en Google Apps Script...");
-        
         const response = await fetch(SCRIPT_URL, {
             method: 'POST',
             mode: 'cors',
-            credentials: 'omit', // Es crucial mantener esto en 'omit'
+            credentials: 'omit',
             headers: { 'Content-Type': 'text/plain;charset=utf-8' },
             body: JSON.stringify(dataPayload)
         });
-        
-        if (!response.ok) {
-            throw new Error(`Error HTTP al guardar. Estado: ${response.status}`);
-        }
-        
+        if (!response.ok) throw new Error(`Error HTTP al guardar. Estado: ${response.status}`);
         const responseData = await response.json();
         console.log("Respuesta de Google al guardar:", responseData);
-        
     } catch (error) { 
         console.error("Fallo crítico al hacer fetch para guardar:", error); 
         alert("No se pudieron guardar los cambios. Revisa tu conexión a internet o la consola de errores.");
@@ -147,10 +118,8 @@ async function cargar(silencioso = false) {
         const response = await fetch(urlFetch);
         if (!response.ok) throw new Error(`Error red al cargar: ${response.status}`);
         const data = await response.json();
-        
         if (data.changed === false) return;
         if (data.lastUpdate) serverLastUpdate = data.lastUpdate;
-        
         usuarios = data.usuarios || [];
         patio = data.patio || [];
         historialEntradas = data.historialEntradas || [];
@@ -159,13 +128,10 @@ async function cargar(silencioso = false) {
         auditoria = data.auditoria || [];
         tiemposCiclos = data.tiemposCiclos || [];
         configuracion = data.configuracion || [];
-
         const cfgRampas = configuracion.find(c => c.clave === 'RAMPAS');
         if (cfgRampas && cfgRampas.valor) TOTAL_RAMPAS = parseInt(cfgRampas.valor);
-
         const cfgTiendas = configuracion.find(c => c.clave === 'TIENDAS');
         if (cfgTiendas && cfgTiendas.valor) TIENDAS_LIST = cfgTiendas.valor.split('\n').map(t => t.trim()).filter(t => t);
-
         const cfgCamiones = configuracion.find(c => c.clave === 'CAMIONES');
         if (cfgCamiones && cfgCamiones.valor) {
             let nuevosCamiones = {};
@@ -175,17 +141,14 @@ async function cargar(silencioso = false) {
             });
             if(Object.keys(nuevosCamiones).length > 0) TIPOS_CAMION = nuevosCamiones;
         }
-
         if(document.getElementById("configRampas")) document.getElementById("configRampas").value = TOTAL_RAMPAS;
         if(document.getElementById("configTiendas")) document.getElementById("configTiendas").value = TIENDAS_LIST.join('\n');
         if(document.getElementById("configCamiones")) document.getElementById("configCamiones").value = Object.keys(TIPOS_CAMION).map(k => `${k},${TIPOS_CAMION[k]}`).join('\n');
-
         const selAdmin = document.getElementById('regTipoCamion');
         if (selAdmin) {
             selAdmin.innerHTML = '';
             Object.keys(TIPOS_CAMION).forEach(k => selAdmin.add(new Option(TIPOS_CAMION[k], k)));
         }
-
     } catch (error) { 
         console.error("Fallo al cargar datos desde Google:", error); 
     } 
@@ -231,40 +194,24 @@ async function syncManual() {
     refrescarVistasActivas();
 }
 
-// ▼▼▼ LÓGICA DE CONTEO MODIFICADA PARA SER MÁS ROBUSTA ▼▼▼
 function actualizarKPIsGlobales() {
     const kpiElement = document.getElementById("kpiViajes");
     if (kpiElement) {
-        // Obtenemos la fecha de hoy, pero normalizada a medianoche para evitar problemas con la hora.
         const today = new Date();
         today.setHours(0, 0, 0, 0);
-
         const viajesHoy = historialEntradas.filter(h => {
-            // 1. Condición rápida: el estado debe ser el correcto.
-            if (h.estado !== 'ENVIADO_A_TIENDA') {
-                return false;
-            }
-
-            // 2. Usamos la nueva función para convertir el string del historial a un objeto Date.
+            if (h.estado !== 'ENVIADO_A_TIENDA') return false;
             const historyDate = parseDateString(h.fecha);
-
-            // 3. Si la fecha no es válida, se ignora el registro y se avisa en consola.
             if (!historyDate) {
                 console.warn(`Formato de fecha no reconocido: '${h.fecha}'. Registro de historial ignorado.`);
                 return false;
             }
-            
-            // 4. Normalizamos la fecha del historial a medianoche también.
             historyDate.setHours(0, 0, 0, 0);
-
-            // 5. Comparamos los valores numéricos de las fechas. Esto es 100% fiable.
             return historyDate.getTime() === today.getTime();
         });
-
         kpiElement.innerText = viajesHoy.length;
     }
 }
-// ▲▲▲ FIN DE LA MODIFICACIÓN DE LA LÓGICA DE CONTEO ▲▲▲
 
 function refrescarVistasActivas() {
     actualizarKPIsGlobales();
@@ -287,13 +234,6 @@ function calcularDiferenciaMinutos(inicio, fin) {
     if (diffMin < 60) return `${diffMin}m`;
     return `${Math.floor(diffMin/60)}h ${diffMin%60}m`;
 }
-
-// ... (El resto del código sigue exactamente igual, no es necesario pegarlo aquí para no alargar la respuesta)
-// ... (copia y pega TODO el bloque de código de arriba en tu archivo script.js)
-
-// --- El resto de tus funciones como intentarLogin, entrarAlSistema, etc. no cambian ---
-// (El resto del código que te he pasado en respuestas anteriores sigue siendo válido)
-// Solo asegúrate de reemplazar el archivo completo con este nuevo contenido.
 
 function intentarLogin() {
     if (usuarios.length === 0) {
@@ -360,13 +300,11 @@ function abrirModulo(m) {
     document.getElementById("tituloModulo").innerText = m.toUpperCase();
     actualizarReloj();
     actualizarKPIsGlobales();
-    
     const viajesHeader = document.getElementById('viajes-despachados-header');
     if (viajesHeader) {
         const esVisible = (m === 'patio' || m === 'despacho');
         viajesHeader.classList.toggle('hidden', !esVisible);
     }
-
     if (m === 'admin') { switchAdminTab('form'); actualizarListaUsuarios(); renderAuditoria(); }
     if (m === 'garita') { renderHistorialGarita(); }
     if (m === 'patio') { renderPatio(); }
@@ -394,10 +332,8 @@ function switchAdminTab(tab) {
     document.getElementById("adminFormSection").classList.toggle("hidden", tab !== 'form');
     document.getElementById("adminAuditSection").classList.toggle("hidden", tab !== 'audit');
     document.getElementById("adminConfigSection").classList.toggle("hidden", tab !== 'config'); 
-    
     const activeClass = "bg-blue-600 px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap flex items-center gap-2";
     const inactiveClass = "bg-slate-800 text-slate-400 px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-700 transition-all whitespace-nowrap flex items-center gap-2";
-    
     document.getElementById("btnTabForm").className = tab === 'form' ? activeClass : inactiveClass;
     document.getElementById("btnTabAudit").className = tab === 'audit' ? activeClass : inactiveClass;
     document.getElementById("btnTabConfig").className = tab === 'config' ? activeClass : inactiveClass;
@@ -419,7 +355,6 @@ async function crearUsuario() {
     const nom  = document.getElementById("regNombre").value.trim();
     const pass = document.getElementById("regPassword").value.trim(); 
     if (!cod || !nom) return;
-    
     let nuevo = { cod, nom, rol: tipo, pass: pass }; 
     if (tipo === "CHOFER") {
         nuevo.tel = document.getElementById("regTelefono").value;
@@ -441,14 +376,11 @@ async function crearUsuario() {
 function actualizarListaUsuarios() {
     const lista = document.getElementById("listaUsuarios");
     if (!lista) return;
-
     lista.innerHTML = usuarios.map(u => {
         let detalles = u.tipoCamion || u.pos || '-';
-        
         const tgBadge = (u.rol === "CHOFER" && u.telegram_chat_id) 
             ? `<div class="text-[9px] text-purple-400 font-bold mt-1">🆔 TG: ${u.telegram_chat_id}</div>` 
             : "";
-
         return `
         <tr class="hover:bg-slate-800/20 transition-all group">
             <td class="p-6"><span class="font-mono font-black text-blue-400 bg-blue-500/5 px-4 py-2 rounded-xl border border-blue-500/10">${u.cod}</span></td>
@@ -592,7 +524,6 @@ function abrirSelectorModal(titulo, opciones, callback) {
     const modal = document.getElementById('selectorModal');
     const container = document.getElementById('selectorOptionsContainer');
     document.getElementById('selectorModalTitle').innerText = titulo;
-    
     container.innerHTML = '';
     opciones.forEach(opt => {
         const btn = document.createElement('button');
@@ -604,7 +535,6 @@ function abrirSelectorModal(titulo, opciones, callback) {
         };
         container.appendChild(btn);
     });
-    
     modal.classList.remove('hidden');
 }
 
@@ -612,6 +542,7 @@ function cerrarSelectorModal() {
     document.getElementById('selectorModal').classList.add('hidden');
 }
 
+// ▼▼▼ FUNCIÓN MODIFICADA PARA ARREGLAR EL CONTEO MANUAL ▼▼▼
 async function cambiarEstadoManualmente(ficha) {
     const opts = Object.keys(ESTADOS_UI).map(key => ({ value: key, label: ESTADOS_UI[key].label }));
     
@@ -620,7 +551,8 @@ async function cambiarEstadoManualmente(ficha) {
         const vehiculo = patio[idx];
         const estadoAnterior = vehiculo.estado;
 
-        if (nuevoEstado === "ENVIADO_A_TIENDA" || nuevoEstado === "FUERA_DEL_RECINTO" || nuevoEstado === "CARGADO" || nuevoEstado === "EN_PATIO") {
+        // Liberar rampa si el nuevo estado es uno de salida o vuelve a patio
+        if (["ENVIADO_A_TIENDA", "FUERA_DEL_RECINTO", "CARGADO", "EN_PATIO"].includes(nuevoEstado)) {
             if (vehiculo.rampa) {
                 const rIndex = rampas.findIndex(r => r.rampa_id == vehiculo.rampa);
                 if (rIndex !== -1) rampas[rIndex].status = "LIBRE";
@@ -628,17 +560,32 @@ async function cambiarEstadoManualmente(ficha) {
             }
         }
 
+        // Asignar timestamps si se mueve a rampa o finaliza carga
         if(nuevoEstado === "EN_RAMPA" && !vehiculo.t_llegada_rampa) vehiculo.t_llegada_rampa = Date.now();
         if(nuevoEstado === "CARGA_LISTA" && !vehiculo.t_fin_carga) vehiculo.t_fin_carga = Date.now();
 
         vehiculo.estado = nuevoEstado;
         vehiculo.lastUpdate = Date.now();
         
+        // --- INICIO DE LA MODIFICACIÓN ---
+        // Si el estado es de salida (despachado o abortado), creamos un registro histórico.
+        if (nuevoEstado === 'ENVIADO_A_TIENDA' || nuevoEstado === 'FUERA_DEL_RECINTO') {
+            const fh = formatoFechaHora();
+            // Actualizamos la fecha y hora del vehículo a la de "salida"
+            vehiculo.fecha = fh.fecha;
+            vehiculo.hora = fh.hora;
+            // Añadimos una copia del estado final al historial, igual que hace la garita.
+            historialEntradas.unshift({ ...vehiculo });
+            console.log(`Registro histórico añadido manualmente para ${ficha}`);
+        }
+        // --- FIN DE LA MODIFICACIÓN ---
+        
         registrarAuditoria(ficha, vehiculo.nom, "PATIO (Manual)", `Cambió de ${estadoAnterior} a ${nuevoEstado}`, vehiculo.idCiclo);
         await guardar();
         renderPatio();
     });
 }
+// ▲▲▲ FIN DE LA FUNCIÓN MODIFICADA ▲▲▲
 
 function renderPatio() {
     const filtro = (document.getElementById("filtro_patio_general") ? document.getElementById("filtro_patio_general").value : "").toLowerCase();
@@ -685,13 +632,10 @@ function renderPatio() {
     document.getElementById("tablaPatioCuerpo").innerHTML = listado.map((u, index) => {
         const min = Math.floor((Date.now() - (u.lastUpdate || u.timestamp)) / 60000);
         const ui = ESTADOS_UI[u.estado] || { label: u.estado, class: "text-slate-400" };
-        
         let ubicacionTexto = u.rampa ? `R-${u.rampa}` : 'Patio';
         if (u.estado === 'ENVIADO_A_TIENDA' && u.tienda) ubicacionTexto = u.tienda;
         if (u.estado === 'FUERA_DEL_RECINTO') ubicacionTexto = '—';
-        
         const bgRow = index % 2 === 0 ? 'bg-white/[0.02]' : 'bg-transparent';
-        
         let truckIcon;
         if (u.tipo && u.tipo.toUpperCase().includes('FURGON SECO')) {
             truckIcon = '<span class="text-2xl">🚛</span>';
@@ -700,46 +644,31 @@ function renderPatio() {
         } else {
             truckIcon = '<span class="text-xl">🚚</span>';
         }
-
         let accionesHtml = `<button onclick="cambiarEstadoManualmente('${u.user}')" class="bg-blue-600 hover:bg-blue-400 text-white p-2 w-8 h-8 rounded-full flex items-center justify-center transition-all shadow-[0_0_10px_rgba(37,99,235,0.4)] hover:scale-110" title="Modificar">⚙️</button>`;
         if (u.estado === 'EN_PATIO') {
             accionesHtml += `<button onclick="asignarRampa('${u.user}')" class="bg-blue-500 hover:bg-blue-300 text-white p-2 w-8 h-8 rounded-full flex items-center justify-center transition-all shadow-[0_0_15px_rgba(59,130,246,0.6)] hover:scale-110" title="Asignar">🎯</button>`;
         }
-
         return `<tr class="${bgRow} hover:bg-white/[0.05] transition-colors group">
-            <td class="p-3 rounded-l-xl">
-                <div class="flex items-center gap-3">
-                    ${truckIcon}
-                    <div class="font-bold text-slate-200 text-sm">${u.user}</div>
-                </div>
-            </td>
+            <td class="p-3 rounded-l-xl"><div class="flex items-center gap-3">${truckIcon}<div class="font-bold text-slate-200 text-sm">${u.user}</div></div></td>
             <td class="p-3 text-slate-400 truncate max-w-[150px]">${u.nom}</td>
             <td class="p-3 text-center text-slate-400 font-medium">${u.tipo}</td>
-            <td class="p-3 text-center">
-                <span class="bg-slate-950/50 border border-slate-700/50 px-3 py-1 rounded text-slate-300">${ubicacionTexto}</span>
-            </td>
+            <td class="p-3 text-center"><span class="bg-slate-950/50 border border-slate-700/50 px-3 py-1 rounded text-slate-300">${ubicacionTexto}</span></td>
             <td class="p-3 text-center font-mono text-slate-400">${u.hora}</td>
             <td class="p-3 text-right font-mono text-amber-500 font-bold tracking-wider">${u.estado === 'ENVIADO_A_TIENDA' || u.estado === 'FUERA_DEL_RECINTO' ? '-' : min + ' m'}</td>
             <td class="p-3 text-right font-black ${ui.text}">${ui.label}</td>
-            <td class="p-3 rounded-r-xl text-center">
-                <div class="flex items-center justify-center gap-2">${accionesHtml}</div>
-            </td>
+            <td class="p-3 rounded-r-xl text-center"><div class="flex items-center justify-center gap-2">${accionesHtml}</div></td>
         </tr>`;
     }).join("") || `<tr><td colspan="8" class="text-center text-slate-600 py-20 italic text-sm bg-slate-900/20 rounded-xl border border-dashed border-slate-700/50">No hay unidades activas en patio</td></tr>`;
-    
     document.getElementById("listaSolicitudesDespacho").innerHTML = solicitudesDespacho.map(s => `<div class="bg-cyan-900/30 border border-cyan-500/20 p-3 rounded-lg text-[10px]"><p class="text-cyan-400 font-black">RAMPA ${s.rampa}</p><p class="text-slate-400 font-bold">${s.tipoReq || 'CUALQUIERA'}</p></div>`).join("") || `<p class="text-slate-600 italic text-[10px]">Sin solicitudes pendientes</p>`;
 }
 
 async function asignarRampa(ficha) {
     let opcionesRampas = [];
-    
     for (let i = 1; i <= TOTAL_RAMPAS; i++) {
         let st = rampas.find(r => r.rampa_id == i)?.status || "LIBRE";
         let u = patio.find(p => p.rampa == i && p.estado !== "ENVIADO_A_TIENDA" && p.estado !== "FUERA_DEL_RECINTO");
         let tieneSolicitud = solicitudesDespacho.find(s => s.rampa == i);
-        
         let labelRight = "", classRight = "", prioridad = 4;
-
         if (st === "AVERIADA") {
             labelRight = "AVERIADA"; classRight = "text-red-400"; prioridad = 4;
         } else if (u) {
@@ -751,37 +680,25 @@ async function asignarRampa(ficha) {
                 labelRight = "VACÍA"; classRight = "text-slate-500"; prioridad = 2;
             }
         }
-
-        opcionesRampas.push({
-            value: i,
-            label: `<span class="flex justify-between items-center w-full"><span>RAMPA ${i}</span><span class="text-[9px] uppercase tracking-widest ${classRight}">${labelRight}</span></span>`,
-            prioridad: prioridad
-        });
+        opcionesRampas.push({ value: i, label: `<span class="flex justify-between items-center w-full"><span>RAMPA ${i}</span><span class="text-[9px] uppercase tracking-widest ${classRight}">${labelRight}</span></span>`, prioridad: prioridad });
     }
-    
     opcionesRampas.sort((a, b) => a.prioridad - b.prioridad);
-
     abrirSelectorModal(`ASIGNAR RAMPA A ${ficha}`, opcionesRampas, async (rNum) => {
         const idx = patio.findIndex(p => p.user === ficha);
         patio[idx].estado = "ASIGNADO"; 
         patio[idx].rampa = rNum;
         patio[idx].lastUpdate = Date.now();
         solicitudesDespacho = solicitudesDespacho.filter(s => s.rampa != rNum);
-        
         const rIndex = rampas.findIndex(r => r.rampa_id == rNum);
         if(rIndex !== -1) rampas[rIndex].status = "OCUPADA";
         else rampas.push({rampa_id: rNum, status: "OCUPADA"});
-
         registrarAuditoria(ficha, patio[idx].nom, "PATIO", `Asignado a Rampa ${rNum}`, patio[idx].idCiclo);
-        
         await enviarTelegram(`🚛 <b>NUEVA ASIGNACIÓN</b>\n\nLa unidad <b>${ficha}</b> ha sido asignada a la <b>Rampa ${rNum}</b>.`, ficha);
-
         const driverAlert = document.getElementById("driverAlert");
         if(driverAlert) {
             document.getElementById("driverMsg").innerText = `Notificación enviada al chofer de la unidad ${ficha}.`;
             driverAlert.classList.remove("hidden");
         }
-        
         await guardar();
         renderPatio();
     });
@@ -790,13 +707,11 @@ async function asignarRampa(ficha) {
 function renderDespacho() {
     const grid = document.getElementById("gridDespacho");
     grid.innerHTML = "";
-    
     for (let i = 1; i <= TOTAL_RAMPAS; i++) {
         const u = patio.find(p => p.rampa == i && p.estado !== "ENVIADO_A_TIENDA" && p.estado !== "FUERA_DEL_RECINTO");
         const rampaObj = rampas.find(r => r.rampa_id == i);
         const st = rampaObj ? rampaObj.status : "LIBRE";
         let content = "", cardStyle = "neon-card rounded-[2rem] p-6 text-center flex flex-col justify-center min-h-[140px] relative";
-
         if (st === "AVERIADA") {
             cardStyle += " neon-border-red";
             content = `<div class="text-red-500 font-black text-sm">🛠️ AVERIADA</div><button onclick="setSt(${i},'LIBRE')" class="mt-3 text-[8px] underline text-slate-400 hover:text-white transition-colors">Reparar</button>`;
@@ -828,7 +743,6 @@ async function setSt(i, s) {
     const rampaIndex = rampas.findIndex(r => r.rampa_id == i);
     if(rampaIndex !== -1) rampas[rampaIndex].status = s;
     else rampas.push({rampa_id: i, status: s});
-    
     if (s === "SOLICITUD") {
         const tipoReq = prompt("¿Qué tipo de camión necesita? (Ej: Contenedor)", "");
         if (!solicitudesDespacho.find(x => x.rampa == i)) {
@@ -836,7 +750,6 @@ async function setSt(i, s) {
             registrarAuditoria("N/A", "DESPACHO", "DESPACHO", `Solicitó Camión en Rampa ${i}`);
         }
     } else solicitudesDespacho = solicitudesDespacho.filter(x => x.rampa != i);
-    
     await guardar();
     renderDespacho();
 }
@@ -844,20 +757,16 @@ async function setSt(i, s) {
 async function reasignarRampa(ficha, rampaActual) {
     const rampasOcupadas = patio.filter(p => p.rampa && p.estado !== "ENVIADO_A_TIENDA").map(p => parseInt(p.rampa));
     const rampasLibres = Array.from({length: TOTAL_RAMPAS}, (_, i) => i + 1).filter(n => !rampasOcupadas.includes(n));
-    
     const opts = rampasLibres.map(n => ({ value: n, label: `RAMPA ${n}` }));
-
     abrirSelectorModal(`MOVER ${ficha} A:`, opts, async (n) => {
         if(n === rampaActual) return;
         const pIdx = patio.findIndex(p => p.user === ficha);
         patio[pIdx].rampa = n;
-
         const oldR = rampas.findIndex(r => r.rampa_id == rampaActual);
         if(oldR !== -1) rampas[oldR].status = "LIBRE";
         const newR = rampas.findIndex(r => r.rampa_id == n);
         if(newR !== -1) rampas[newR].status = "OCUPADA";
         else rampas.push({rampa_id: n, status: "OCUPADA"});
-
         registrarAuditoria(ficha, patio[pIdx].nom, "DESPACHO", `Movido de Rampa ${rampaActual} a ${n}`, patio[pIdx].idCiclo);
         await guardar();
         renderDespacho();
@@ -867,18 +776,13 @@ async function reasignarRampa(ficha, rampaActual) {
 async function finalizarCarga(r) {
     const idx = patio.findIndex(p => p.rampa == r && p.estado !== "ENVIADO_A_TIENDA");
     if (idx === -1) return;
-
     const opts = TIENDAS_LIST.map(t => ({ value: t, label: t }));
-
     abrirSelectorModal(`DESTINO PARA RAMPA ${r}`, opts, async (tiendaFinal) => {
         patio[idx].estado = "CARGA_LISTA";
         patio[idx].t_fin_carga = Date.now(); 
         patio[idx].tienda = tiendaFinal; 
-        
         registrarAuditoria(patio[idx].user, patio[idx].nom, "DESPACHO", `Carga Finalizada en Rampa ${r} para ${tiendaFinal}`, patio[idx].idCiclo);
-        
         await enviarTelegram(`📦 <b>CARGA FINALIZADA</b>\n\nLa unidad <b>${patio[idx].user}</b> está cargada en Rampa ${r}.\nDestino: <b>${tiendaFinal}</b>.`, patio[idx].user);
-
         await guardar();
         renderDespacho();
     });
@@ -888,7 +792,6 @@ function reproducirAlerta() {
     try {
         const audio = new Audio('alerta.mp3');
         audio.play().catch(e => console.log("El navegador bloqueó el sonido automático.", e));
-        
         if (window.navigator && window.navigator.vibrate) {
             window.navigator.vibrate([1000, 500, 1000]); 
         }
@@ -902,23 +805,18 @@ function cargarInfoChofer() {
     const vehiculo = patio.find(p => p.user === usuarioLogueado.cod && p.estado !== "ENVIADO_A_TIENDA" && p.estado !== "FUERA_DEL_RECINTO");
     document.getElementById("infoChoferNombre").innerText = usuarioLogueado.nom;
     const infoDiv = document.getElementById("infoChofer"), accionDiv = document.getElementById("accionChofer");
-
     let estadoActual = vehiculo ? vehiculo.estado : "FUERA";
-    
     if (estadoChoferAnterior !== null && estadoChoferAnterior !== estadoActual) {
         if (estadoActual === "ASIGNADO" || estadoActual === "CARGA_LISTA") {
             reproducirAlerta(); 
         }
     }
-    
     estadoChoferAnterior = estadoActual;
-
     if (!vehiculo) {
         infoDiv.innerHTML = '<span class="text-slate-500 text-base font-bold">Fuera de Recinto / En Tienda</span>';
         accionDiv.innerHTML = '';
         return;
     }
-
     switch (vehiculo.estado) {
         case "EN_PATIO":
             infoDiv.innerHTML = '<span class="text-blue-400">EN PATIO</span>'; accionDiv.innerHTML = '<p class="text-xs text-slate-500 mt-4">Aguarde asignación de rampa</p>'; break;
@@ -928,11 +826,7 @@ function cargarInfoChofer() {
             infoDiv.innerHTML = `<span class="text-emerald-400">EN RAMPA ${vehiculo.rampa}</span>`; accionDiv.innerHTML = '<p class="text-xs text-slate-500 mt-4">Proceso de carga en curso...</p>'; break;
         case "CARGA_LISTA":
             infoDiv.innerHTML = `<span class="text-purple-400 animate-pulse">¡CARGA LISTA!</span>`; 
-            accionDiv.innerHTML = `<div class="text-center space-y-4">
-                <p class="text-lg text-slate-200">Su carga en <b class="text-purple-400 text-2xl">Rampa ${vehiculo.rampa}</b> finalizó.</p>
-                <p class="text-base text-slate-300">Destino: <b class="text-white">${vehiculo.tienda || 'No especificado'}</b></p>
-                <button onclick="choferConfirmaCarga()" class="w-full bg-purple-500 hover:bg-purple-400 text-white font-black py-4 rounded-2xl text-lg uppercase shadow-xl active:scale-95 transition-transform border-none">Confirmar Salida</button>
-            </div>`; 
+            accionDiv.innerHTML = `<div class="text-center space-y-4"><p class="text-lg text-slate-200">Su carga en <b class="text-purple-400 text-2xl">Rampa ${vehiculo.rampa}</b> finalizó.</p><p class="text-base text-slate-300">Destino: <b class="text-white">${vehiculo.tienda || 'No especificado'}</b></p><button onclick="choferConfirmaCarga()" class="w-full bg-purple-500 hover:bg-purple-400 text-white font-black py-4 rounded-2xl text-lg uppercase shadow-xl active:scale-95 transition-transform border-none">Confirmar Salida</button></div>`; 
             break;
         case "CARGADO":
             infoDiv.innerHTML = `<span class="text-orange-400">CARGADO</span>`; accionDiv.innerHTML = '<p class="text-xs text-slate-400 mt-4">Diríjase a la garita para registrar su salida.</p>'; break;
@@ -962,47 +856,37 @@ async function choferConfirmaCarga() {
     const rampaIndex = rampas.findIndex(r => r.rampa_id == rampaLiberada);
     if(rampaIndex !== -1) rampas[rampaIndex].status = "LIBRE";
     registrarAuditoria(patio[idx].user, patio[idx].nom, "CHOFER", `Liberó Rampa ${rampaLiberada}`, patio[idx].idCiclo);
-    
     await enviarTelegram(`✅ <b>SALIDA DE RAMPA</b>\n\nLa unidad <b>${patio[idx].user}</b> ha abandonado la Rampa ${rampaLiberada} y se dirige a Despacho.`, patio[idx].user);
-
     await guardar();
     cargarInfoChofer(); 
 }
 
 document.addEventListener('DOMContentLoaded', async () => { 
     actualizarReloj(); 
-    
     const btnLogin = document.getElementById("btnLogin");
     if(btnLogin) {
         btnLogin.innerText = "⏳ CONECTANDO...";
         btnLogin.disabled = true;
         btnLogin.classList.add("opacity-50", "cursor-not-allowed");
     }
-    
     const savedUser = localStorage.getItem('cpces_user');
     const savedModule = localStorage.getItem('cpces_modulo');
-    
     if (savedUser) {
         usuarioLogueado = JSON.parse(savedUser);
         document.getElementById("loginScreen").classList.add("hidden");
-        
         document.getElementById("welcomeMsg").innerText = `OPERADOR: ${usuarioLogueado.nom} | ROL: ${usuarioLogueado.rol}`;
         filtrarMenu(usuarioLogueado.rol);
-
         if (!savedModule || savedModule === 'menu') {
             document.getElementById("menuPrincipal").classList.remove("hidden");
         }
     }
-    
     await cargar(true); 
-    
     if(btnLogin) {
         btnLogin.innerText = "INGRESAR";
         btnLogin.disabled = false;
         btnLogin.classList.remove("opacity-50", "cursor-not-allowed");
         document.getElementById("loginError").innerText = ""; 
     }
-    
     if (usuarioLogueado && savedModule && savedModule !== 'menu') {
         abrirModulo(savedModule);
     }
