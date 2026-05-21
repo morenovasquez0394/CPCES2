@@ -2,6 +2,39 @@
 
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyBGO96_Vvtna84xGKW31Xi0FodTiYFstUc_RPmXcq-tTRBbcYZoh_SMgiDZjd3xZYP2A/exec';
 
+// ▼▼▼ NUEVA FUNCIÓN ROBUSTA PARA INTERPRETAR FECHAS ▼▼▼
+/**
+ * Convierte un string de fecha en varios formatos a un objeto Date de JavaScript.
+ * Es más robusto que new Date() por sí solo.
+ * @param {string} dateStr - El string de fecha (ej. "20/05/2026", "2026-05-20").
+ * @returns {Date|null} Un objeto Date si es válido, o null si no se puede interpretar.
+ */
+function parseDateString(dateStr) {
+  if (!dateStr || typeof dateStr !== 'string') {
+    return null;
+  }
+
+  // Intenta interpretar el formato DD/MM/YYYY (común en latam)
+  const dmyMatch = dateStr.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/);
+  if (dmyMatch) {
+    const [, day, month, year] = dmyMatch;
+    // Ojo: En JS los meses son 0-11, por eso se resta 1.
+    const date = new Date(year, month - 1, day);
+    if (!isNaN(date.getTime())) return date;
+  }
+  
+  // Como fallback, intenta un parseo general que funciona bien con formatos
+  // como YYYY-MM-DD, fechas ISO (con T), y formatos de EE.UU.
+  const genericDate = new Date(dateStr);
+  if (!isNaN(genericDate.getTime())) {
+    return genericDate;
+  }
+
+  return null; // Si ningún formato funcionó
+}
+// ▲▲▲ FIN DE LA NUEVA FUNCIÓN ▲▲▲
+
+
 async function enviarTelegram(mensaje, fichaDestino = null){
     if (!fichaDestino) {
         console.warn("enviarTelegram llamado sin fichaDestino. Mensaje no enviado.");
@@ -198,14 +231,40 @@ async function syncManual() {
     refrescarVistasActivas();
 }
 
+// ▼▼▼ LÓGICA DE CONTEO MODIFICADA PARA SER MÁS ROBUSTA ▼▼▼
 function actualizarKPIsGlobales() {
     const kpiElement = document.getElementById("kpiViajes");
     if (kpiElement) {
-        const hoy = formatoFechaHora().fecha;
-        const viajesHoy = historialEntradas.filter(h => h.fecha === hoy && h.estado === 'ENVIADO_A_TIENDA').length;
-        kpiElement.innerText = viajesHoy;
+        // Obtenemos la fecha de hoy, pero normalizada a medianoche para evitar problemas con la hora.
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const viajesHoy = historialEntradas.filter(h => {
+            // 1. Condición rápida: el estado debe ser el correcto.
+            if (h.estado !== 'ENVIADO_A_TIENDA') {
+                return false;
+            }
+
+            // 2. Usamos la nueva función para convertir el string del historial a un objeto Date.
+            const historyDate = parseDateString(h.fecha);
+
+            // 3. Si la fecha no es válida, se ignora el registro y se avisa en consola.
+            if (!historyDate) {
+                console.warn(`Formato de fecha no reconocido: '${h.fecha}'. Registro de historial ignorado.`);
+                return false;
+            }
+            
+            // 4. Normalizamos la fecha del historial a medianoche también.
+            historyDate.setHours(0, 0, 0, 0);
+
+            // 5. Comparamos los valores numéricos de las fechas. Esto es 100% fiable.
+            return historyDate.getTime() === today.getTime();
+        });
+
+        kpiElement.innerText = viajesHoy.length;
     }
 }
+// ▲▲▲ FIN DE LA MODIFICACIÓN DE LA LÓGICA DE CONTEO ▲▲▲
 
 function refrescarVistasActivas() {
     actualizarKPIsGlobales();
@@ -228,6 +287,13 @@ function calcularDiferenciaMinutos(inicio, fin) {
     if (diffMin < 60) return `${diffMin}m`;
     return `${Math.floor(diffMin/60)}h ${diffMin%60}m`;
 }
+
+// ... (El resto del código sigue exactamente igual, no es necesario pegarlo aquí para no alargar la respuesta)
+// ... (copia y pega TODO el bloque de código de arriba en tu archivo script.js)
+
+// --- El resto de tus funciones como intentarLogin, entrarAlSistema, etc. no cambian ---
+// (El resto del código que te he pasado en respuestas anteriores sigue siendo válido)
+// Solo asegúrate de reemplazar el archivo completo con este nuevo contenido.
 
 function intentarLogin() {
     if (usuarios.length === 0) {
@@ -593,7 +659,6 @@ function renderPatio() {
     
     document.getElementById("listaKpiPatio").innerHTML = kpiPatioList(["EN_PATIO", "ASIGNADO"]);
     document.getElementById("listaKpiRampa").innerHTML = kpiPatioList(["EN_RAMPA", "CARGA_LISTA", "CARGADO"]);
-    // <<< NUEVA LÍNEA AÑADIDA PARA POBLAR LA LISTA DE DESPACHADAS >>>
     document.getElementById("listaKpiDespachadas").innerHTML = kpiPatioList(["ENVIADO_A_TIENDA"]);
         
     const prioridadOrden = { "EN_PATIO": 1, "ASIGNADO": 2, "EN_RAMPA": 3, "CARGA_LISTA": 4, "CARGADO": 5, "ENVIADO_A_TIENDA": 6, "FUERA_DEL_RECINTO": 7 };
