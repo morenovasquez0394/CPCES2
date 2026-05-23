@@ -1,4 +1,3 @@
---- START OF FILE style.css ---
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap');
 
 body { font-family: 'Inter', sans-serif; overflow-x: hidden; }
@@ -79,39 +78,95 @@ body { font-family: 'Inter', sans-serif; overflow-x: hidden; }
 #reader button { background: #3b82f6 !important; color: white !important; border-radius: 8px !important; padding: 5px 10px !important; border: none !important; margin: 5px !important; font-weight: bold;}
 #reader select { padding: 5px; border-radius: 5px; margin-bottom: 10px; }
 #reader { color: black !important; border: none !important; }
---- END OF FILE style.css ---
+
 /* --- ESTILOS PARA EL KPI DE VIAJES EN EL HEADER --- */
 
 /* Contenedor principal del KPI */
 #viajes-despachados-header {
-    display: flex; /* <-- Importante para alinear horizontalmente */
-    align-items: center; /* Centra verticalmente el texto y el número */
-    gap: 1rem; /* Espacio entre el texto y el número */
-    padding: 0.5rem 1rem !important; /* Reduce el espacio interno para que sea más compacto */
-    /* La clase 'hidden' de Tailwind se usará para mostrarlo/ocultarlo */
+    display: flex; 
+    align-items: center; 
+    gap: 1rem; 
+    padding: 0.5rem 1rem !important; 
 }
 
 /* Estilo para el texto "Viajes Despachados Hoy" */
 #viajes-despachados-header p {
-    margin-bottom: 0; /* Elimina el margen por defecto del párrafo */
-    line-height: 1; /* Ajusta la altura de línea */
+    margin-bottom: 0; 
+    line-height: 1; 
 }
 
 /* Estilo para el número del contador */
 #viajes-despachados-header #kpiViajes {
-    font-size: 1.75rem; /* Reduce el tamaño del número (era 3xl) */
-    line-height: 1; /* Asegura que no ocupe espacio extra verticalmente */
+    font-size: 1.75rem; 
+    line-height: 1; 
 }
 
 /* --- AJUSTE PARA PANTALLAS PEQUEÑAS (MÓVILES) --- */
 @media (max-width: 768px) {
-    /* Oculta el texto en pantallas pequeñas para ahorrar espacio */
     #viajes-despachados-header p {
         display: none;
     }
-    /* Reduce el padding y el gap cuando el texto desaparece */
     #viajes-despachados-header {
         gap: 0;
         padding: 0.5rem 0.75rem !important;
     }
+}
+
+
+/* ====================================================================== */
+/* === ADICIONES DE DISEÑO PARA EL NUEVO MÓDULO DE PATIO === */
+/* ====================================================================== */
+
+/* Animación de rotación para indicadores circulares (KPIs superiores) */
+@keyframes spin-slow {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+.animate-spin-slow {
+    animation: spin-slow 12s linear infinite;
+}
+
+/* Personalización elegante para los selectores de rango (Sliders) */
+input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 4px;
+    background: #1e293b;
+    border-radius: 999px;
+    outline: none;
+}
+input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: #3b82f6;
+    cursor: pointer;
+    box-shadow: 0 0 8px rgba(59, 130, 246, 0.6);
+    transition: background 0.15s ease-in-out;
+}
+input[type="range"]::-webkit-slider-thumb:hover {
+    background: #60a5fa;
+    box-shadow: 0 0 12px rgba(96, 165, 250, 0.8);
+}
+input[type="range"]::-moz-range-thumb {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: #3b82f6;
+    cursor: pointer;
+    box-shadow: 0 0 8px rgba(59, 130, 246, 0.6);
+    transition: background 0.15s ease-in-out;
+    border: none;
+}
+input[type="range"]::-moz-range-thumb:hover {
+    background: #60a5fa;
+}
+
+/* Suavizado de bordes para inputs y selects oscuros */
+select option {
+    background: #090d16;
+    color: #e2e8f0;
 }
