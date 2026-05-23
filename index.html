@@ -7,7 +7,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black">
     <meta name="apple-mobile-web-app-title" content="CPCES Chofer">
-    <link rel="apple-touch-icon" href="/ruta/a/tus/iconos/icon-192x192.png">
+    <link class="apple-touch-icon" href="/ruta/a/tus/iconos/icon-192x192.png">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CP CES - Control Logístico de Patio</title>
@@ -142,7 +142,7 @@
                     <div class="bg-slate-950/50 border border-slate-800/80 rounded-2xl p-3.5 flex items-center gap-3">
                         <div class="text-2xl p-2 bg-amber-500/10 rounded-xl text-amber-400">🚚</div>
                         <div>
-                            <div class="text-xl font-black text-white">98</div>
+                            <div id="kpiPatioTotal" class="text-xl font-black text-white">98</div>
                             <div class="text-[9px] text-slate-500 uppercase font-black tracking-wider">En Patio</div>
                         </div>
                     </div>
@@ -150,11 +150,11 @@
                     <div class="bg-slate-950/50 border border-slate-800/80 rounded-2xl p-3.5 flex items-center gap-3">
                         <div class="text-2xl p-2 bg-emerald-500/10 rounded-xl text-emerald-400">🏁</div>
                         <div>
-                            <div class="text-xl font-black text-white">124</div>
+                            <div id="kpiViajesHoy" class="text-xl font-black text-white">124</div>
                             <div class="text-[9px] text-slate-500 uppercase font-black tracking-wider">Viajes Hoy</div>
                         </div>
                     </div>
-                    <!-- Indicador 3: Empresa (Col-span para mejor lectura) -->
+                    <!-- Indicador 3: Empresa -->
                     <div class="bg-slate-950/50 border border-slate-800/80 rounded-2xl p-3.5 flex items-center gap-3 col-span-1 lg:col-span-2">
                         <div class="text-xs font-black bg-blue-500/10 text-blue-400 w-8 h-8 rounded-full flex items-center justify-center border border-blue-500/20">2</div>
                         <div class="truncate">
@@ -262,7 +262,7 @@
                             <select class="bg-slate-950 border border-slate-800 text-xs rounded-xl p-3 w-full text-white focus:border-blue-500 outline-none transition-all cursor-pointer">
                                 <option value="todos">Todos</option>
                                 <option value="seco">Carga Seca</option>
-                                <option value="refrigerado">Carga Fría❄️</option>
+                                <option value="refrigerado">Carga Fría ❄️</option>
                             </select>
                         </div>
 
@@ -350,7 +350,7 @@
                                     </tr>
                                 </thead>
                                 <tbody id="tablaPatioCuerpo" class="text-xs divide-y divide-slate-800/40">
-                                    <!-- Tu script.js insertará aquí las filas dinámicas sin romperse -->
+                                    <!-- script.js insertará aquí las filas dinámicas -->
                                 </tbody>
                             </table>
                         </div>
@@ -386,23 +386,23 @@
                         <div id="fechaFooter" class="text-[9px] text-blue-400 uppercase tracking-widest font-bold">24/05/2025</div>
                     </div>
 
-                    <!-- Variables del Dashboard (Adaptadas puramente a Viajes e Información de Flotas) -->
+                    <!-- Variables del Dashboard -->
                     <div class="md:col-span-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <!-- Card 1: Viajes Realizados (Adaptación de Ingresos) -->
+                        <!-- Card 1: Viajes Realizados -->
                         <div class="bg-slate-950/40 border border-slate-800/80 p-4 rounded-2xl flex items-center justify-between">
                             <div>
                                 <div class="text-[9px] text-slate-500 uppercase tracking-wider font-black mb-1">Viajes Realizados</div>
-                                <div class="text-lg font-black text-white">124 Viajes</div>
+                                <div id="footerViajesCount" class="text-lg font-black text-white">124 Viajes</div>
                             </div>
                             <div class="text-[10px] font-black text-emerald-400 bg-emerald-500/10 px-2.5 py-1.5 rounded-xl flex items-center gap-1 shadow-inner">
                                 <span>↑ 12.5%</span>
                             </div>
                         </div>
-                        <!-- Card 2: Unidades Despachadas (Uso de variables existentes) -->
+                        <!-- Card 2: Unidades Despachadas -->
                         <div class="bg-slate-950/40 border border-slate-800/80 p-4 rounded-2xl flex items-center justify-between">
                             <div>
                                 <div class="text-[9px] text-slate-500 uppercase tracking-wider font-black mb-1">Unidades Despachadas</div>
-                                <div class="text-lg font-black text-white">35 Unidades</div>
+                                <div id="footerDespachadasCount" class="text-lg font-black text-white">35 Unidades</div>
                             </div>
                             <div class="text-[10px] font-black text-blue-400 bg-blue-500/10 px-2.5 py-1.5 rounded-xl flex items-center gap-1 shadow-inner">
                                 <span>↑ 8.2%</span>
@@ -410,7 +410,7 @@
                         </div>
                     </div>
 
-                    <!-- Widget del Clima en Terminal (Miami / Local) -->
+                    <!-- Widget del Clima -->
                     <div class="md:col-span-3 pl-6 border-l border-slate-800 flex items-center justify-between">
                         <div class="flex items-center gap-3">
                             <span class="text-3xl">⛅</span>
@@ -424,8 +424,6 @@
                 </div>
 
                 <!-- CONTENEDORES AUXILIARES OCULTOS PARA COMPATIBILIDAD ABSOLUTA CON SCRIPT.JS -->
-                <!-- Tu script.js podría intentar referenciar, buscar o vaciar estas listas. Las dejamos aquí ocultas 
-                     en el DOM para asegurar que el sistema actual no experimente fallos o interrupciones -->
                 <div class="hidden">
                     <ul id="listaKpiPatio"></ul>
                     <ul id="listaKpiRampa"></ul>
@@ -462,92 +460,4 @@
                         <div class="flex flex-col gap-2"><label class="text-[10px] font-black text-slate-600 ml-3 uppercase">Contraseña</label><input id="regPassword" class="p-4 bg-slate-900 rounded-2xl border border-slate-800 outline-none focus:border-blue-500 font-bold" placeholder="(Dejar blanco para crear después)" onkeydown="if(event.key==='Enter') { document.getElementById(document.getElementById('filtroTipo').value === 'CHOFER' ? 'regTelefono' : 'regPosicion').focus(); }"></div>
                         <div id="contPos" class="flex flex-col gap-2"><label class="text-[10px] font-black text-slate-600 ml-3 uppercase">Posición / Rango</label><input id="regPosicion" class="p-4 bg-slate-900 rounded-2xl border border-slate-800 outline-none focus:border-blue-500 font-bold" placeholder="PUESTO OPERATIVO" onkeydown="if(event.key==='Enter') crearUsuario()"></div>
                         <div id="contTel" class="hidden flex flex-col gap-2"><label class="text-[10px] font-black text-slate-600 ml-3 uppercase">Contacto</label><input id="regTelefono" class="p-4 bg-slate-900 rounded-2xl border border-slate-800 outline-none focus:border-blue-500 font-bold" placeholder="TELÉFONO" onkeydown="if(event.key==='Enter') document.getElementById('regCompania').focus()"></div>
-                        <div id="contComp" class="hidden flex flex-col gap-2"><label class="text-[10px] font-black text-slate-600 ml-3 uppercase">Compañía</label><input id="regCompania" class="p-4 bg-slate-900 rounded-2xl border border-slate-800 outline-none focus:border-blue-500 font-bold" placeholder="EMPRESA" onkeydown="if(event.key==='Enter') document.getElementById('regTipoCamion').focus()"></div>
-                        <div id="contTipoCam" class="hidden flex flex-col gap-2"><label class="text-[10px] font-black text-slate-600 ml-3 uppercase">Configuración de Camión</label>
-                            <select id="regTipoCamion" class="p-4 bg-slate-900 rounded-2xl border border-slate-800 outline-none focus:border-blue-500 font-bold text-slate-400" onkeydown="if(event.key==='Enter') crearUsuario()"></select>
-                        </div>
-                        <div id="contTelegramChatId" class="hidden flex flex-col gap-2">
-                            <label class="text-[10px] font-black text-slate-600 ml-3 uppercase">ID de Chat Telegram</label>
-                            <input id="regTelegramChatId" class="p-4 bg-slate-900 rounded-2xl border border-slate-800 outline-none focus:border-purple-500 font-bold" placeholder="ID único del chat del chofer">
-                        </div>
-                        <button onclick="crearUsuario()" class="lg:col-span-3 bg-blue-600 hover:bg-blue-500 p-6 rounded-2xl font-black text-sm tracking-[0.3em] transition-all shadow-2xl mt-6 uppercase">Vincular al Sistema</button>
-                    </div>
-                    <div class="overflow-x-auto"><table class="w-full"><thead class="text-slate-600 text-[11px] font-black uppercase tracking-[0.3em] border-b border-slate-800"><tr><th class="p-6 text-left">Ficha</th><th class="p-6 text-left">Usuario</th><th class="p-6 text-left">Detalles</th><th class="p-6 text-right">Control</th></tr></thead><tbody id="listaUsuarios" class="divide-y divide-slate-800/50"></tbody></table></div>
-                </div>
-                <div id="adminAuditSection" class="hidden overflow-x-auto">
-                    <table class="w-full text-left table-compact">
-                        <thead><tr><th>Fecha / Hora</th><th>ID de Ciclo</th><th>Ficha</th><th>Chofer</th><th>Módulo</th><th>Acción Registrada</th></tr></thead>
-                        <tbody id="listaAuditoriaCuerpo"></tbody>
-                    </table>
-                </div>
-                <div id="adminConfigSection" class="hidden">
-                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-                        <div class="bg-slate-950/50 p-8 rounded-[2rem] border border-slate-800 flex flex-col">
-                            <h3 class="text-blue-400 font-black tracking-widest uppercase text-sm mb-2">Total de Rampas</h3>
-                            <p class="text-[10px] text-slate-500 mb-6 flex-1">Cantidad máxima de rampas de despacho habilitadas en el patio.</p>
-                            <input id="configRampas" type="number" class="p-6 bg-slate-900 rounded-2xl border border-slate-700 outline-none focus:border-blue-500 font-black text-center text-3xl text-white w-full" placeholder="Ej: 24">
-                        </div>
-                        <div class="bg-slate-950/50 p-8 rounded-[2rem] border border-slate-800 flex flex-col">
-                            <h3 class="text-emerald-400 font-black tracking-widest uppercase text-sm mb-2">Directorio de Tiendas</h3>
-                            <p class="text-[10px] text-slate-500 mb-6 flex-1">Agrega una tienda por línea. Se mostrarán al operador al finalizar una carga.</p>
-                            <textarea id="configTiendas" class="p-4 bg-slate-900 rounded-2xl border border-slate-700 outline-none focus:border-emerald-500 font-bold text-xs text-slate-300 h-64 resize-none leading-relaxed scrollbar-thin" placeholder="1100-WC&#10;1200-SV&#10;..."></textarea>
-                        </div>
-                        <div class="bg-slate-950/50 p-8 rounded-[2rem] border border-slate-800 flex flex-col">
-                            <h3 class="text-purple-400 font-black tracking-widest uppercase text-sm mb-2">Tipos de Camiones</h3>
-                            <p class="text-[10px] text-slate-500 mb-6">Formato por línea: <b>CODIGO,Nombre Visual</b>. Ejemplo: CAMION_SECO,Camion Seco 🚛</p>
-                            <textarea id="configCamiones" class="p-4 bg-slate-900 rounded-2xl border border-slate-700 outline-none focus:border-purple-500 font-bold text-xs text-slate-300 h-64 resize-none leading-relaxed scrollbar-thin" placeholder="RIGIDO,RIGIDO&#10;CAMION_FRIO,CAMION FRIO ❄️&#10;..."></textarea>
-                        </div>
-                    </div>
-                    <div class="flex justify-end pt-4 border-t border-slate-800 mt-4">
-                        <button onclick="guardarAjustesSistema()" class="bg-blue-600 hover:bg-blue-500 px-10 py-5 rounded-2xl font-black text-sm tracking-[0.3em] transition-all shadow-[0_0_30px_rgba(37,99,235,0.3)] uppercase active:scale-95 text-white flex items-center gap-3">
-                            <span>💾 Guardar Cambios en Servidor</span>
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <div id="chofer" class="hidden max-w-md mx-auto glass p-14 rounded-[4rem] text-center shadow-2xl mt-10">
-                <h2 id="infoChoferNombre" class="text-4xl font-black mb-3 text-amber-500 uppercase italic tracking-tighter"></h2>
-                <p class="text-[10px] text-slate-600 tracking-[0.5em] mb-12 uppercase font-black">Monitoreo de Turno</p>
-                <div id="infoChofer" class="bg-slate-950/90 p-10 rounded-[2.5rem] mb-10 text-3xl font-black border border-white/5 shadow-inner"></div>
-                <div id="accionChofer"></div>
-            </div>
-        </div>
-    </div>
-
-    <div id="selectorModal" class="hidden fixed inset-0 bg-black/90 backdrop-blur-sm flex items-center justify-center z-[1000] p-4">
-        <div class="bg-[#0f172a] border border-slate-700 w-full max-w-sm rounded-[2rem] flex flex-col max-h-[80vh] shadow-[0_0_50px_rgba(59,130,246,0.15)]">
-            <div class="p-5 border-b border-slate-800 flex justify-between items-center">
-                <h3 id="selectorModalTitle" class="text-xs font-black uppercase text-blue-400 tracking-widest">Opciones</h3>
-                <button onclick="cerrarSelectorModal()" class="text-slate-500 hover:text-white text-xl transition-colors">&times;</button>
-            </div>
-            <div id="selectorOptionsContainer" class="p-4 space-y-2 overflow-y-auto flex-1 scrollbar-thin"></div>
-            <div class="p-4 bg-slate-900/50 rounded-b-[2rem] text-center border-t border-slate-800">
-                <button onclick="cerrarSelectorModal()" class="text-[10px] font-black text-slate-400 hover:text-white uppercase tracking-widest transition-colors">Cancelar</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="modalScanner" class="hidden fixed inset-0 bg-black/95 z-[999] flex flex-col items-center justify-center p-4">
-        <h3 class="text-white font-black text-2xl uppercase tracking-widest mb-6">Escáner Activo</h3>
-        <div class="w-full max-w-sm bg-white rounded-3xl overflow-hidden shadow-[0_0_50px_rgba(16,185,129,0.3)]">
-            <div id="reader" style="width: 100%;"></div>
-        </div>
-        <button onclick="detenerScanner()" class="mt-8 bg-red-600 hover:bg-red-500 text-white px-8 py-4 rounded-2xl font-black uppercase tracking-widest active:scale-95 transition-all">Cancelar y Cerrar</button>
-    </div>
-
-    <div id="driverAlert" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50">
-        <div class="bg-blue-600 p-10 rounded-[2.5rem] text-center max-w-sm w-full mx-4 shadow-[0_20px_60px_rgba(37,99,235,0.5)] border-2 border-white/20">
-            <div class="text-5xl mb-4">🚚</div><p id="driverMsg" class="font-black text-xl uppercase mb-8 text-white leading-snug"></p><button onclick="document.getElementById('driverAlert').classList.add('hidden')" class="w-full bg-white text-blue-600 font-black py-4 rounded-2xl text-lg uppercase active:scale-95 transition-transform">Entendido</button>
-        </div>
-    </div>
-    
-    <div id="choferAlert" class="hidden fixed top-10 left-1/2 -translate-x-1/2 w-[92%] max-w-md bg-blue-600 p-8 rounded-[2.5rem] shadow-[0_20px_50px_rgba(37,99,235,0.5)] z-[100] border-4 border-white/20 backdrop-blur-xl">
-        <div class="text-center">
-            <div class="text-5xl mb-4">🚛</div><h4 class="font-black text-2xl uppercase mb-2">¡Carga Lista!</h4><p id="msgChofer" class="text-sm font-bold mb-8 text-blue-100 italic"></p><button onclick="choferAceptaSalida()" class="w-full bg-white text-blue-600 font-black py-5 rounded-2xl text-lg uppercase shadow-xl active:scale-95 transition-transform border-none">Confirmar Salida y Liberar Rampa</button>
-        </div>
-    </div>
-
-    <script src="script.js"></script>
-</body>
-</html>
+                        <div id="contComp" class="hidden flex flex-col gap-2"><label class="text-[10px] font-black text-slate-600 ml-3 uppercase">Compañía</label>
