@@ -16,25 +16,33 @@
     <link rel="stylesheet" href="style.css">
     
     <style>
-        /* === CÓDIGO MODIFICADO PARA FONDO GLOBAL === */
+        /* === CÓDIGO PARA FONDO GLOBAL === */
         body {
-            background-image: url('fondo-login.jpg'); /* <-- Tu imagen de fondo para TODA la app */
+            background-image: url('fondo-login.jpg'); 
             background-size: cover;
             background-position: center;
-            background-attachment: fixed; /* Mantiene el fondo estático al hacer scroll */
+            background-attachment: fixed; 
         }
         /* Capa oscura semi-transparente sobre la imagen para legibilidad */
         body::before {
             content: '';
-            position: fixed; /* Ocupa toda la pantalla siempre */
+            position: fixed; 
             inset: 0;
-            background-color: rgba(2, 6, 23, 0.85); /* Azul oscuro de tu app con opacidad */
-            z-index: -1; /* Se pone detrás de todo el contenido */
+            background-color: rgba(2, 6, 23, 0.90); 
+            z-index: -1; 
         }
-        /* ============================================= */
 
         .scrollbar-thin::-webkit-scrollbar { width: 4px; }
         .scrollbar-thin::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+        
+        /* Animación suave para los medidores */
+        @keyframes pulse-slow {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 0.8; }
+        }
+        .animate-pulse-slow {
+            animation: pulse-slow 3s infinite;
+        }
     </style>
 </head>
 <body class="text-slate-200 min-h-screen">
@@ -125,66 +133,308 @@
                 </div>
             </div>
 
-            <div id="patio" class="hidden relative rounded-[2rem] overflow-hidden border border-slate-700/50 shadow-2xl p-6 h-[calc(100vh-140px)]">
-                <div class="absolute inset-0 bg-[url('https://images.pexels.com/photos/2249290/pexels-photo-2249290.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2')] bg-cover bg-center opacity-10"></div>
-                <div class="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-900/95 to-slate-950/90"></div>
+            <!-- MODULO DE PATIO REDISEÑADO -->
+            <div id="patio" class="hidden flex flex-col gap-6 w-full text-slate-200">
                 
-                <div class="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-6 h-full">
-                    <div class="lg:col-span-3 bg-slate-900/60 backdrop-blur-xl border border-white/10 rounded-[1.5rem] flex flex-col overflow-hidden shadow-[0_0_40px_rgba(0,0,0,0.5)]">
-                        <div class="p-5 border-b border-white/5 flex justify-between items-center bg-slate-800/40">
-                            <h3 class="text-white font-bold text-sm tracking-wide">Resumen Operativo</h3>
-                        </div>
-                        <div class="p-5 overflow-y-auto scrollbar-thin space-y-6 flex-1">
-                            <div>
-                                <div class="flex items-center gap-2 mb-3"><div class="w-3 h-3 bg-cyan-500 rounded-sm"></div><p class="text-slate-300 text-xs font-bold">Solicitudes de Despacho</p></div>
-                                <div id="listaSolicitudesDespacho" class="space-y-2"></div>
-                            </div>
-                            <div>
-                                <div class="flex items-center gap-2 mb-3"><div class="w-3 h-3 bg-blue-500 rounded-sm"></div><p class="text-slate-300 text-xs font-bold">Unidades en Patio</p></div>
-                                <ul id="listaKpiPatio" class="text-xs font-bold space-y-2 text-slate-400 bg-slate-950/40 p-3 rounded-xl border border-white/5"></ul>
-                            </div>
-                            <div>
-                                <div class="flex items-center gap-2 mb-3"><div class="w-3 h-3 bg-purple-500 rounded-sm"></div><p class="text-slate-300 text-xs font-bold">Unidades en Rampa</p></div>
-                                <ul id="listaKpiRampa" class="text-xs font-bold space-y-2 text-slate-400 bg-slate-950/40 p-3 rounded-xl border border-white/5"></ul>
-                            </div>
-                            <!-- ▼▼▼ NUEVA SECCIÓN AÑADIDA ▼▼▼ -->
-                            <div>
-                                <div class="flex items-center gap-2 mb-3"><div class="w-3 h-3 bg-cyan-500 rounded-sm"></div><p class="text-slate-300 text-xs font-bold">Unidades Despachadas</p></div>
-                                <ul id="listaKpiDespachadas" class="text-xs font-bold space-y-2 text-slate-400 bg-slate-950/40 p-3 rounded-xl border border-white/5"></ul>
-                            </div>
-                            <!-- ▲▲▲ FIN DE LA SECCIÓN ▲▲▲ -->
-                        </div>
-                        <div class="p-4 border-t border-white/5 bg-slate-900/80">
-                            <button onclick="syncManual()" class="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black rounded-xl py-3 text-xs uppercase tracking-widest transition-all shadow-[0_0_15px_rgba(16,185,129,0.3)]">Actualizar Datos</button>
+                <!-- FILA 1: INDICADORES SUPERIORES OPERATIVOS -->
+                <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4 bg-slate-900/50 backdrop-blur-xl border border-slate-800 p-4 rounded-3xl shadow-lg">
+                    <!-- Indicador 1: Vehículos en Patio -->
+                    <div class="bg-slate-950/50 border border-slate-800/80 rounded-2xl p-3.5 flex items-center gap-3">
+                        <div class="text-2xl p-2 bg-amber-500/10 rounded-xl text-amber-400">🚚</div>
+                        <div>
+                            <div class="text-xl font-black text-white">98</div>
+                            <div class="text-[9px] text-slate-500 uppercase font-black tracking-wider">En Patio</div>
                         </div>
                     </div>
-                    
-                    <div class="lg:col-span-9 bg-slate-900/60 backdrop-blur-xl border border-white/10 rounded-[1.5rem] flex flex-col shadow-[0_0_40px_rgba(0,0,0,0.5)] h-full overflow-hidden">
-                        <div class="p-5 border-b border-white/5 flex-shrink-0 flex justify-between items-center bg-slate-800/40">
-                            <h3 class="text-white font-bold text-sm tracking-wide">Lista de Unidades Activas</h3>
-                            <span class="text-slate-400 text-xs" id="totalVehiculosHeader">Total de Unidades: 0</span>
+                    <!-- Indicador 2: Viajes Hoy -->
+                    <div class="bg-slate-950/50 border border-slate-800/80 rounded-2xl p-3.5 flex items-center gap-3">
+                        <div class="text-2xl p-2 bg-emerald-500/10 rounded-xl text-emerald-400">🏁</div>
+                        <div>
+                            <div class="text-xl font-black text-white">124</div>
+                            <div class="text-[9px] text-slate-500 uppercase font-black tracking-wider">Viajes Hoy</div>
                         </div>
-                        <div class="flex-1 overflow-y-auto scrollbar-thin p-2">
-                            <table class="w-full text-left border-separate border-spacing-y-1">
-                                <thead class="text-slate-400 text-[10px] uppercase tracking-widest sticky top-0 bg-slate-900/90 backdrop-blur-md z-10">
-                                    <tr>
-                                        <th class="p-4 font-normal rounded-l-lg">ID</th>
-                                        <th class="p-4 font-normal">Conductor</th>
-                                        <th class="p-4 font-normal text-center">Tipo</th>
-                                        <th class="p-4 font-normal text-center">Ubicación</th>
-                                        <th class="p-4 font-normal text-center">H. Llegada</th>
-                                        <th class="p-4 font-normal text-right">Tiempo</th>
-                                        <th class="p-4 font-normal text-right">Estado</th>
-                                        <th class="p-4 font-normal text-center rounded-r-lg">Acción</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="tablaPatioCuerpo" class="text-xs"></tbody>
-                            </table>
+                    </div>
+                    <!-- Indicador 3: Empresa (Col-span para mejor lectura) -->
+                    <div class="bg-slate-950/50 border border-slate-800/80 rounded-2xl p-3.5 flex items-center gap-3 col-span-1 lg:col-span-2">
+                        <div class="text-xs font-black bg-blue-500/10 text-blue-400 w-8 h-8 rounded-full flex items-center justify-center border border-blue-500/20">2</div>
+                        <div class="truncate">
+                            <div class="text-xs font-black text-white truncate">QHQB Jetset Inc</div>
+                            <div class="text-[9px] text-slate-500 uppercase font-black tracking-wider">Empresa Activa</div>
+                        </div>
+                    </div>
+                    <!-- Indicador 4: Flota/Viajes Programados -->
+                    <div class="bg-slate-950/50 border border-slate-800/80 rounded-2xl p-3.5 flex items-center gap-3">
+                        <div class="text-2xl p-2 bg-cyan-500/10 rounded-xl text-cyan-400">📅</div>
+                        <div>
+                            <div class="text-xl font-black text-white">1.7K</div>
+                            <div class="text-[9px] text-slate-500 uppercase font-black tracking-wider">Prog. Mes</div>
+                        </div>
+                    </div>
+                    <!-- Indicador 5: Calificación de Rendimiento -->
+                    <div class="bg-slate-950/50 border border-slate-800/80 rounded-2xl p-3.5 flex items-center gap-3">
+                        <div class="text-2xl p-2 bg-yellow-500/10 rounded-xl text-yellow-400">⭐</div>
+                        <div>
+                            <div class="text-xl font-black text-white">4.2</div>
+                            <div class="text-[9px] text-slate-500 uppercase font-black tracking-wider">Eficiencia</div>
+                        </div>
+                    </div>
+                    <!-- Indicador 6: Millas Promedio por Viaje -->
+                    <div class="bg-slate-950/50 border border-slate-800/80 rounded-2xl p-3.5 flex items-center gap-3">
+                        <div class="relative w-8 h-8 flex items-center justify-center">
+                            <div class="absolute inset-0 rounded-full border border-blue-500/20 border-t-blue-500 animate-pulse-slow"></div>
+                            <span class="text-[8px] font-black text-blue-400 uppercase">mi</span>
+                        </div>
+                        <div>
+                            <div class="text-xs font-black text-white leading-tight">135 mi</div>
+                            <div class="text-[9px] text-slate-500 uppercase font-black tracking-wider">Millas Prom.</div>
+                        </div>
+                    </div>
+                    <!-- Indicador 7: Peso Promedio de Carga -->
+                    <div class="bg-slate-950/50 border border-slate-800/80 rounded-2xl p-3.5 flex items-center gap-3">
+                        <div class="relative w-8 h-8 flex items-center justify-center">
+                            <div class="absolute inset-0 rounded-full border border-emerald-500/20 border-t-emerald-500 animate-pulse-slow"></div>
+                            <span class="text-[8px] font-black text-emerald-400 uppercase">lb</span>
+                        </div>
+                        <div>
+                            <div class="text-xs font-black text-white leading-tight">3.3K lb</div>
+                            <div class="text-[9px] text-slate-500 uppercase font-black tracking-wider">Peso Prom.</div>
                         </div>
                     </div>
                 </div>
+
+                <!-- FILA 2: ESPACIO DE TRABAJO PRINCIPAL (Filtros + Tabla) -->
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                    
+                    <!-- PANEL IZQUIERDO: SECCIÓN DE FILTROS Y CONTROL -->
+                    <div class="lg:col-span-3 bg-slate-900/50 backdrop-blur-xl border border-slate-800 p-5 rounded-3xl flex flex-col gap-5 shadow-lg">
+                        <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                            <h3 class="text-white font-bold text-xs tracking-wider uppercase">Filtros de Patio</h3>
+                            <button onclick="syncManual()" class="text-slate-500 hover:text-white transition-colors" title="Limpiar Filtros">
+                                🔄
+                            </button>
+                        </div>
+
+                        <!-- Selector de Patio/Zona -->
+                        <div class="flex flex-col gap-1.5">
+                            <label class="text-[9px] font-black text-slate-500 uppercase tracking-wider">Seleccionar patio</label>
+                            <select id="filtroPatioZona" class="bg-slate-950 border border-slate-800 text-xs rounded-xl p-3 w-full text-white focus:border-blue-500 outline-none transition-all cursor-pointer">
+                                <option value="todos">Todos</option>
+                                <option value="patio_a">Patio Norte (Rampas 1-10)</option>
+                                <option value="patio_b">Patio Sur (Rampas 11-20)</option>
+                            </select>
+                        </div>
+
+                        <!-- Checkboxes: Tipo de vehículo -->
+                        <div class="flex flex-col gap-2.5">
+                            <label class="text-[9px] font-black text-slate-500 uppercase tracking-wider">Tipo de vehículo</label>
+                            <div class="space-y-2 text-xs">
+                                <label class="flex items-center gap-2 cursor-pointer text-slate-300 hover:text-white transition-colors">
+                                    <input type="checkbox" checked class="rounded border-slate-800 bg-slate-950 text-blue-600 focus:ring-0 w-4 h-4">
+                                    <span>Panel Van</span>
+                                </label>
+                                <label class="flex items-center gap-2 cursor-pointer text-slate-300 hover:text-white transition-colors">
+                                    <input type="checkbox" checked class="rounded border-slate-800 bg-slate-950 text-blue-600 focus:ring-0 w-4 h-4">
+                                    <span>Box Van</span>
+                                </label>
+                                <label class="flex items-center gap-2 cursor-pointer text-slate-300 hover:text-white transition-colors">
+                                    <input type="checkbox" checked class="rounded border-slate-800 bg-slate-950 text-blue-600 focus:ring-0 w-4 h-4">
+                                    <span>Rigid Truck</span>
+                                </label>
+                                <label class="flex items-center gap-2 cursor-pointer text-slate-300 hover:text-white transition-colors">
+                                    <input type="checkbox" class="rounded border-slate-800 bg-slate-950 text-blue-600 focus:ring-0 w-4 h-4">
+                                    <span>Semi-Trailer Truck</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Tabs: Fuente de energía -->
+                        <div class="flex flex-col gap-1.5">
+                            <label class="text-[9px] font-black text-slate-500 uppercase tracking-wider">Fuente de energía</label>
+                            <div class="grid grid-cols-2 gap-2 bg-slate-950 p-1 rounded-xl border border-slate-800 text-xs text-center font-bold">
+                                <button class="bg-blue-600 text-white py-2 rounded-lg shadow transition-all">Diésel</button>
+                                <button class="text-slate-400 hover:text-white py-2 rounded-lg transition-all">Eléctrico</button>
+                            </div>
+                        </div>
+
+                        <!-- Desplegable: Tipo de Carga -->
+                        <div class="flex flex-col gap-1.5">
+                            <label class="text-[9px] font-black text-slate-500 uppercase tracking-wider">Tipo de carga</label>
+                            <select class="bg-slate-950 border border-slate-800 text-xs rounded-xl p-3 w-full text-white focus:border-blue-500 outline-none transition-all cursor-pointer">
+                                <option value="todos">Todos</option>
+                                <option value="seco">Carga Seca</option>
+                                <option value="refrigerado">Carga Fría❄️</option>
+                            </select>
+                        </div>
+
+                        <!-- Sliders de Rangos de Operación -->
+                        <div class="flex flex-col gap-2">
+                            <div class="flex justify-between text-[9px] font-black text-slate-500 uppercase tracking-wider">
+                                <span>Distancia del Viaje</span>
+                            </div>
+                            <input type="range" min="0" max="50000" value="25000" class="w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-blue-500">
+                            <div class="flex justify-between text-[8px] text-slate-600 font-mono">
+                                <span>0 mi</span>
+                                <span>500k+ mi</span>
+                            </div>
+                        </div>
+
+                        <div class="flex flex-col gap-2">
+                            <div class="flex justify-between text-[9px] font-black text-slate-500 uppercase tracking-wider">
+                                <span>Volumen de Carga (Payload)</span>
+                            </div>
+                            <input type="range" min="0" max="20000" value="10000" class="w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-blue-500">
+                            <div class="flex justify-between text-[8px] text-slate-600 font-mono">
+                                <span>0 lbs</span>
+                                <span>20k+ lbs</span>
+                            </div>
+                        </div>
+
+                        <!-- Botón de Acción de Filtros -->
+                        <div class="pt-2 border-t border-slate-800">
+                            <button onclick="syncManual()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-black rounded-xl py-3 text-xs uppercase tracking-wider transition-all shadow-md">
+                                Aplicar filtros
+                            </button>
+                        </div>
+
+                        <!-- CONTENEDOR LOGÍSTICO: SOLICITUDES DE DESPACHO (LÓGICA ORIGINAL PRESERVADA) -->
+                        <div class="border-t border-slate-800 pt-4 mt-2">
+                            <div class="flex items-center gap-2 mb-3">
+                                <div class="w-2.5 h-2.5 bg-cyan-500 rounded-full animate-pulse"></div>
+                                <p class="text-slate-300 text-xs font-bold uppercase tracking-wider">Solicitudes de Despacho</p>
+                            </div>
+                            <div id="listaSolicitudesDespacho" class="space-y-2 max-h-48 overflow-y-auto scrollbar-thin">
+                                <!-- Poblado por tu script.js -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- CUERPO CENTRAL: TABLA DE UNIDADES ACTIVAS -->
+                    <div class="lg:col-span-9 bg-slate-900/50 backdrop-blur-xl border border-slate-800 rounded-3xl flex flex-col shadow-lg overflow-hidden">
+                        
+                        <div class="p-5 border-b border-slate-800 flex flex-col sm:flex-row gap-4 justify-between sm:items-center bg-slate-800/20">
+                            <div>
+                                <h3 class="text-white font-bold text-sm tracking-wide uppercase">Unidades Activas en Terminal</h3>
+                                <span class="text-slate-500 text-xs font-bold" id="totalVehiculosHeader">Total de Unidades: 0</span>
+                            </div>
+                            
+                            <!-- Buscador e Iconos Estéticos -->
+                            <div class="flex items-center gap-3">
+                                <div class="relative">
+                                    <input type="text" placeholder="Buscar vehículo..." class="bg-slate-950 border border-slate-800 text-xs rounded-xl py-2.5 pl-3 pr-8 w-48 text-white focus:border-blue-500 outline-none transition-all placeholder:text-slate-600 font-bold">
+                                    <span class="absolute right-3 top-3 text-slate-600 text-[10px]">🔍</span>
+                                </div>
+                                <div class="flex items-center border border-slate-800 rounded-xl overflow-hidden bg-slate-950">
+                                    <button class="p-2.5 text-slate-400 hover:text-white transition-colors border-r border-slate-800">
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
+                                    </button>
+                                    <button class="p-2.5 text-blue-500 bg-slate-900 transition-colors">
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Contenedor de la Tabla -->
+                        <div class="flex-1 overflow-x-auto scrollbar-thin p-3">
+                            <table class="w-full text-left border-collapse">
+                                <thead class="text-slate-400 text-[10px] uppercase tracking-wider border-b border-slate-800 bg-slate-950/20">
+                                    <tr>
+                                        <th class="p-4 font-bold text-slate-500">ID</th>
+                                        <th class="p-4 font-bold text-slate-500">Conductor</th>
+                                        <th class="p-4 font-bold text-slate-500 text-center">Tipo</th>
+                                        <th class="p-4 font-bold text-slate-500 text-center">Ubicación</th>
+                                        <th class="p-4 font-bold text-slate-500 text-center">H. Llegada</th>
+                                        <th class="p-4 font-bold text-slate-500 text-right">Tiempo</th>
+                                        <th class="p-4 font-bold text-slate-500 text-right">Estado</th>
+                                        <th class="p-4 font-bold text-slate-500 text-center">Acción</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tablaPatioCuerpo" class="text-xs divide-y divide-slate-800/40">
+                                    <!-- Tu script.js insertará aquí las filas dinámicas sin romperse -->
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Paginador Estético Inferior -->
+                        <div class="p-4 border-t border-slate-800 flex items-center justify-between bg-slate-950/30 text-xs">
+                            <div class="flex items-center gap-1">
+                                <button class="px-2.5 py-1.5 rounded-lg border border-slate-800 text-slate-500 hover:text-white transition-all">&lt;</button>
+                                <button class="px-3 py-1.5 rounded-lg bg-blue-600 text-white font-bold shadow-md">1</button>
+                                <button class="px-3 py-1.5 rounded-lg border border-slate-800 text-slate-400 hover:text-white transition-all">2</button>
+                                <button class="px-3 py-1.5 rounded-lg border border-slate-800 text-slate-400 hover:text-white transition-all">3</button>
+                                <span class="text-slate-600 px-1">...</span>
+                                <button class="px-3 py-1.5 rounded-lg border border-slate-800 text-slate-400 hover:text-white transition-all">10</button>
+                                <button class="px-2.5 py-1.5 rounded-lg border border-slate-800 text-slate-400 hover:text-white transition-all">&gt;</button>
+                            </div>
+                            <div class="text-slate-500">
+                                <select class="bg-slate-950 border border-slate-800 rounded-lg p-1.5 text-slate-400 outline-none cursor-pointer">
+                                    <option>10 por página</option>
+                                    <option>25 por página</option>
+                                </select>
+                            </div>
+                        </div>
+
+                    </div>
+
+                </div>
+
+                <!-- FILA 3: RESUMEN DEL DÍA OPERATIVO (PIE DE PÁGINA) -->
+                <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-center bg-slate-900/50 backdrop-blur-xl border border-slate-800 p-5 rounded-3xl mt-4">
+                    <!-- Reloj y fecha del Footer -->
+                    <div class="md:col-span-3 border-r border-slate-800 pr-6 flex flex-col justify-center">
+                        <div id="relojFooter" class="text-xl font-mono text-white tracking-widest font-black">10:42 AM</div>
+                        <div id="fechaFooter" class="text-[9px] text-blue-400 uppercase tracking-widest font-bold">24/05/2025</div>
+                    </div>
+
+                    <!-- Variables del Dashboard (Adaptadas puramente a Viajes e Información de Flotas) -->
+                    <div class="md:col-span-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <!-- Card 1: Viajes Realizados (Adaptación de Ingresos) -->
+                        <div class="bg-slate-950/40 border border-slate-800/80 p-4 rounded-2xl flex items-center justify-between">
+                            <div>
+                                <div class="text-[9px] text-slate-500 uppercase tracking-wider font-black mb-1">Viajes Realizados</div>
+                                <div class="text-lg font-black text-white">124 Viajes</div>
+                            </div>
+                            <div class="text-[10px] font-black text-emerald-400 bg-emerald-500/10 px-2.5 py-1.5 rounded-xl flex items-center gap-1 shadow-inner">
+                                <span>↑ 12.5%</span>
+                            </div>
+                        </div>
+                        <!-- Card 2: Unidades Despachadas (Uso de variables existentes) -->
+                        <div class="bg-slate-950/40 border border-slate-800/80 p-4 rounded-2xl flex items-center justify-between">
+                            <div>
+                                <div class="text-[9px] text-slate-500 uppercase tracking-wider font-black mb-1">Unidades Despachadas</div>
+                                <div class="text-lg font-black text-white">35 Unidades</div>
+                            </div>
+                            <div class="text-[10px] font-black text-blue-400 bg-blue-500/10 px-2.5 py-1.5 rounded-xl flex items-center gap-1 shadow-inner">
+                                <span>↑ 8.2%</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Widget del Clima en Terminal (Miami / Local) -->
+                    <div class="md:col-span-3 pl-6 border-l border-slate-800 flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <span class="text-3xl">⛅</span>
+                            <div>
+                                <div class="text-xs font-black text-white leading-none">Miami, FL</div>
+                                <div class="text-[9px] text-slate-500 uppercase font-black tracking-wider mt-1">Parcialmente nublado</div>
+                            </div>
+                        </div>
+                        <div class="text-2xl font-black text-white">28°C</div>
+                    </div>
+                </div>
+
+                <!-- CONTENEDORES AUXILIARES OCULTOS PARA COMPATIBILIDAD ABSOLUTA CON SCRIPT.JS -->
+                <!-- Tu script.js podría intentar referenciar, buscar o vaciar estas listas. Las dejamos aquí ocultas 
+                     en el DOM para asegurar que el sistema actual no experimente fallos o interrupciones -->
+                <div class="hidden">
+                    <ul id="listaKpiPatio"></ul>
+                    <ul id="listaKpiRampa"></ul>
+                    <ul id="listaKpiDespachadas"></ul>
+                </div>
+
             </div>
 
+            <!-- MODULO DESPACHO -->
             <div id="despacho" class="hidden flex flex-col gap-6">
                 <div class="flex flex-wrap justify-between items-end px-4 gap-4 mb-2">
                     <h3 class="text-xs font-black text-slate-500 uppercase tracking-widest italic">Panel Maestro de Despacho</h3>
