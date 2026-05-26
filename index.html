@@ -14,7 +14,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <link rel="stylesheet" href="style.css">
-    
+
     <style>
         /* === CÓDIGO PARA FONDO GLOBAL === */
         body {
@@ -34,7 +34,7 @@
 
         .scrollbar-thin::-webkit-scrollbar { width: 4px; }
         .scrollbar-thin::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
-        
+
         /* Animación suave para los medidores */
         @keyframes pulse-slow {
             0%, 100% { opacity: 0.3; }
@@ -44,6 +44,7 @@
             animation: pulse-slow 3s infinite;
         }
     </style>
+<base target="_blank">
 </head>
 <body class="text-slate-200 min-h-screen">
 
@@ -96,7 +97,7 @@
                         </div>
                     </div>
                 </div>
-                
+
                 <div class="flex items-center gap-6">
                     <div id="viajes-despachados-header" class="hidden bg-emerald-900/20 border border-emerald-500/20 rounded-xl p-4">
                         <p class="text-emerald-500 text-[10px] uppercase tracking-widest mb-1 font-bold">Viajes Despachados Hoy</p>
@@ -135,14 +136,14 @@
 
             <!-- MODULO DE PATIO REDISEÑADO -->
             <div id="patio" class="hidden flex flex-col gap-6 w-full text-slate-200">
-                
+
                 <!-- FILA 1: INDICADORES SUPERIORES OPERATIVOS -->
                 <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4 bg-slate-900/50 backdrop-blur-xl border border-slate-800 p-4 rounded-3xl shadow-lg">
                     <!-- Indicador 1: Vehículos en Patio -->
                     <div class="bg-slate-950/50 border border-slate-800/80 rounded-2xl p-3.5 flex items-center gap-3">
                         <div class="text-2xl p-2 bg-amber-500/10 rounded-xl text-amber-400">🚚</div>
                         <div>
-                            <div id="kpiPatioTotal" class="text-xl font-black text-white">98</div>
+                            <div id="kpiPatioTotal" class="text-xl font-black text-white">0</div>
                             <div class="text-[9px] text-slate-500 uppercase font-black tracking-wider">En Patio</div>
                         </div>
                     </div>
@@ -150,15 +151,15 @@
                     <div class="bg-slate-950/50 border border-slate-800/80 rounded-2xl p-3.5 flex items-center gap-3">
                         <div class="text-2xl p-2 bg-emerald-500/10 rounded-xl text-emerald-400">🏁</div>
                         <div>
-                            <div id="kpiViajesHoy" class="text-xl font-black text-white">124</div>
+                            <div id="kpiViajesHoy" class="text-xl font-black text-white">0</div>
                             <div class="text-[9px] text-slate-500 uppercase font-black tracking-wider">Viajes Hoy</div>
                         </div>
                     </div>
                     <!-- Indicador 3: Empresa -->
                     <div class="bg-slate-950/50 border border-slate-800/80 rounded-2xl p-3.5 flex items-center gap-3 col-span-1 lg:col-span-2">
-                        <div class="text-xs font-black bg-blue-500/10 text-blue-400 w-8 h-8 rounded-full flex items-center justify-center border border-blue-500/20">2</div>
+                        <div class="text-xs font-black bg-blue-500/10 text-blue-400 w-8 h-8 rounded-full flex items-center justify-center border border-blue-500/20">CP</div>
                         <div class="truncate">
-                            <div class="text-xs font-black text-white truncate">QHQB Jetset Inc</div>
+                            <div class="text-xs font-black text-white truncate">CP CES Logística</div>
                             <div class="text-[9px] text-slate-500 uppercase font-black tracking-wider">Empresa Activa</div>
                         </div>
                     </div>
@@ -166,15 +167,15 @@
                     <div class="bg-slate-950/50 border border-slate-800/80 rounded-2xl p-3.5 flex items-center gap-3">
                         <div class="text-2xl p-2 bg-cyan-500/10 rounded-xl text-cyan-400">📅</div>
                         <div>
-                            <div class="text-xl font-black text-white">1.7K</div>
-                            <div class="text-[9px] text-slate-500 uppercase font-black tracking-wider">Prog. Mes</div>
+                            <div class="text-xl font-black text-white">--</div>
+                            <div class="text-[9px] text-slate-500 uppercase font-black tracking-wider">Programados</div>
                         </div>
                     </div>
                     <!-- Indicador 5: Calificación de Rendimiento -->
                     <div class="bg-slate-950/50 border border-slate-800/80 rounded-2xl p-3.5 flex items-center gap-3">
                         <div class="text-2xl p-2 bg-yellow-500/10 rounded-xl text-yellow-400">⭐</div>
                         <div>
-                            <div class="text-xl font-black text-white">4.2</div>
+                            <div class="text-xl font-black text-white">--</div>
                             <div class="text-[9px] text-slate-500 uppercase font-black tracking-wider">Eficiencia</div>
                         </div>
                     </div>
@@ -185,7 +186,7 @@
                             <span class="text-[8px] font-black text-blue-400 uppercase">mi</span>
                         </div>
                         <div>
-                            <div class="text-xs font-black text-white leading-tight">135 mi</div>
+                            <div class="text-xs font-black text-white leading-tight">--</div>
                             <div class="text-[9px] text-slate-500 uppercase font-black tracking-wider">Millas Prom.</div>
                         </div>
                     </div>
@@ -196,7 +197,7 @@
                             <span class="text-[8px] font-black text-emerald-400 uppercase">lb</span>
                         </div>
                         <div>
-                            <div class="text-xs font-black text-white leading-tight">3.3K lb</div>
+                            <div class="text-xs font-black text-white leading-tight">--</div>
                             <div class="text-[9px] text-slate-500 uppercase font-black tracking-wider">Peso Prom.</div>
                         </div>
                     </div>
@@ -204,12 +205,12 @@
 
                 <!-- FILA 2: ESPACIO DE TRABAJO PRINCIPAL (Filtros + Tabla) -->
                 <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-                    
+
                     <!-- PANEL IZQUIERDO: SECCIÓN DE FILTROS Y CONTROL -->
                     <div class="lg:col-span-3 bg-slate-900/50 backdrop-blur-xl border border-slate-800 p-5 rounded-3xl flex flex-col gap-5 shadow-lg">
                         <div class="flex justify-between items-center border-b border-slate-800 pb-3">
                             <h3 class="text-white font-bold text-xs tracking-wider uppercase">Filtros de Patio</h3>
-                            <button onclick="syncManual()" class="text-slate-500 hover:text-white transition-colors" title="Limpiar Filtros">
+                            <button onclick="syncManual()" class="text-slate-500 hover:text-white transition-colors" title="Sincronizar">
                                 🔄
                             </button>
                         </div>
@@ -310,17 +311,17 @@
 
                     <!-- CUERPO CENTRAL: TABLA DE UNIDADES ACTIVAS -->
                     <div class="lg:col-span-9 bg-slate-900/50 backdrop-blur-xl border border-slate-800 rounded-3xl flex flex-col shadow-lg overflow-hidden">
-                        
+
                         <div class="p-5 border-b border-slate-800 flex flex-col sm:flex-row gap-4 justify-between sm:items-center bg-slate-800/20">
                             <div>
                                 <h3 class="text-white font-bold text-sm tracking-wide uppercase">Unidades Activas en Terminal</h3>
                                 <span class="text-slate-500 text-xs font-bold" id="totalVehiculosHeader">Total de Unidades: 0</span>
                             </div>
-                            
+
                             <!-- Buscador e Iconos Estéticos -->
                             <div class="flex items-center gap-3">
                                 <div class="relative">
-                                    <input type="text" placeholder="Buscar vehículo..." class="bg-slate-950 border border-slate-800 text-xs rounded-xl py-2.5 pl-3 pr-8 w-48 text-white focus:border-blue-500 outline-none transition-all placeholder:text-slate-600 font-bold">
+                                    <input type="text" id="filtro_patio_general" placeholder="Buscar vehículo..." class="bg-slate-950 border border-slate-800 text-xs rounded-xl py-2.5 pl-3 pr-8 w-48 text-white focus:border-blue-500 outline-none transition-all placeholder:text-slate-600 font-bold">
                                     <span class="absolute right-3 top-3 text-slate-600 text-[10px]">🔍</span>
                                 </div>
                                 <div class="flex items-center border border-slate-800 rounded-xl overflow-hidden bg-slate-950">
@@ -382,8 +383,8 @@
                 <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-center bg-slate-900/50 backdrop-blur-xl border border-slate-800 p-5 rounded-3xl mt-4">
                     <!-- Reloj y fecha del Footer -->
                     <div class="md:col-span-3 border-r border-slate-800 pr-6 flex flex-col justify-center">
-                        <div id="relojFooter" class="text-xl font-mono text-white tracking-widest font-black">10:42 AM</div>
-                        <div id="fechaFooter" class="text-[9px] text-blue-400 uppercase tracking-widest font-bold">24/05/2025</div>
+                        <div id="relojFooter" class="text-xl font-mono text-white tracking-widest font-black">--:--</div>
+                        <div id="fechaFooter" class="text-[9px] text-blue-400 uppercase tracking-widest font-bold">--/--/----</div>
                     </div>
 
                     <!-- Variables del Dashboard -->
@@ -392,20 +393,20 @@
                         <div class="bg-slate-950/40 border border-slate-800/80 p-4 rounded-2xl flex items-center justify-between">
                             <div>
                                 <div class="text-[9px] text-slate-500 uppercase tracking-wider font-black mb-1">Viajes Realizados</div>
-                                <div id="footerViajesCount" class="text-lg font-black text-white">124 Viajes</div>
+                                <div id="footerViajesCount" class="text-lg font-black text-white">0 Viajes</div>
                             </div>
                             <div class="text-[10px] font-black text-emerald-400 bg-emerald-500/10 px-2.5 py-1.5 rounded-xl flex items-center gap-1 shadow-inner">
-                                <span>↑ 12.5%</span>
+                                <span>↑ --%</span>
                             </div>
                         </div>
                         <!-- Card 2: Unidades Despachadas -->
                         <div class="bg-slate-950/40 border border-slate-800/80 p-4 rounded-2xl flex items-center justify-between">
                             <div>
                                 <div class="text-[9px] text-slate-500 uppercase tracking-wider font-black mb-1">Unidades Despachadas</div>
-                                <div id="footerDespachadasCount" class="text-lg font-black text-white">35 Unidades</div>
+                                <div id="footerDespachadasCount" class="text-lg font-black text-white">0 Unidades</div>
                             </div>
                             <div class="text-[10px] font-black text-blue-400 bg-blue-500/10 px-2.5 py-1.5 rounded-xl flex items-center gap-1 shadow-inner">
-                                <span>↑ 8.2%</span>
+                                <span>↑ --%</span>
                             </div>
                         </div>
                     </div>
@@ -415,11 +416,11 @@
                         <div class="flex items-center gap-3">
                             <span class="text-3xl">⛅</span>
                             <div>
-                                <div class="text-xs font-black text-white leading-none">Miami, FL</div>
-                                <div class="text-[9px] text-slate-500 uppercase font-black tracking-wider mt-1">Parcialmente nublado</div>
+                                <div class="text-xs font-black text-white leading-none">Terminal</div>
+                                <div class="text-[9px] text-slate-500 uppercase font-black tracking-wider mt-1">Condiciones</div>
                             </div>
                         </div>
-                        <div class="text-2xl font-black text-white">28°C</div>
+                        <div class="text-2xl font-black text-white">--°C</div>
                     </div>
                 </div>
 
@@ -448,10 +449,16 @@
                     <button onclick="switchAdminTab('audit')" id="btnTabAudit" class="bg-slate-800 text-slate-400 px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-700 transition-all whitespace-nowrap">Auditoría de Ciclos</button>
                     <button onclick="switchAdminTab('config')" id="btnTabConfig" class="bg-slate-800 text-slate-400 px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-700 transition-all whitespace-nowrap flex items-center gap-2"><span class="text-sm">⚙️</span> Ajustes del Sistema</button>
                 </div>
+
+                <!-- SECCIÓN FORMULARIO (USUARIOS) -->
                 <div id="adminFormSection">
                     <div class="flex justify-end mb-6">
                         <select id="filtroTipo" onchange="ajustarFormularioAdmin()" class="bg-blue-600 hover:bg-blue-500 p-4 rounded-2xl text-[10px] font-black tracking-widest transition-all cursor-pointer uppercase outline-none border-none shadow-xl shadow-blue-900/20">
-                            <option value="GARITA">Nuevo: Operador Garita</option><option value="PATIO">Nuevo: Operador Patio</option><option value="DESPACHO">Nuevo: Operador Despacho</option><option value="CHOFER">Nuevo: Chofer Externo</option><option value="ADMIN">Nuevo: Administrador</option>
+                            <option value="GARITA">Nuevo: Operador Garita</option>
+                            <option value="PATIO">Nuevo: Operador Patio</option>
+                            <option value="DESPACHO">Nuevo: Operador Despacho</option>
+                            <option value="CHOFER">Nuevo: Chofer Externo</option>
+                            <option value="ADMIN">Nuevo: Administrador</option>
                         </select>
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12 bg-slate-950/50 p-10 rounded-[2rem] border border-slate-800">
@@ -460,4 +467,92 @@
                         <div class="flex flex-col gap-2"><label class="text-[10px] font-black text-slate-600 ml-3 uppercase">Contraseña</label><input id="regPassword" class="p-4 bg-slate-900 rounded-2xl border border-slate-800 outline-none focus:border-blue-500 font-bold" placeholder="(Dejar blanco para crear después)" onkeydown="if(event.key==='Enter') { document.getElementById(document.getElementById('filtroTipo').value === 'CHOFER' ? 'regTelefono' : 'regPosicion').focus(); }"></div>
                         <div id="contPos" class="flex flex-col gap-2"><label class="text-[10px] font-black text-slate-600 ml-3 uppercase">Posición / Rango</label><input id="regPosicion" class="p-4 bg-slate-900 rounded-2xl border border-slate-800 outline-none focus:border-blue-500 font-bold" placeholder="PUESTO OPERATIVO" onkeydown="if(event.key==='Enter') crearUsuario()"></div>
                         <div id="contTel" class="hidden flex flex-col gap-2"><label class="text-[10px] font-black text-slate-600 ml-3 uppercase">Contacto</label><input id="regTelefono" class="p-4 bg-slate-900 rounded-2xl border border-slate-800 outline-none focus:border-blue-500 font-bold" placeholder="TELÉFONO" onkeydown="if(event.key==='Enter') document.getElementById('regCompania').focus()"></div>
-                        <div id="contComp" class="hidden flex flex-col gap-2"><label class="text-[10px] font-black text-slate-600 ml-3 uppercase">Compañía</label>
+                        <div id="contComp" class="hidden flex flex-col gap-2"><label class="text-[10px] font-black text-slate-600 ml-3 uppercase">Compañía</label><input id="regCompania" class="p-4 bg-slate-900 rounded-2xl border border-slate-800 outline-none focus:border-blue-500 font-bold" placeholder="EMPRESA TRANSPORTISTA" onkeydown="if(event.key==='Enter') document.getElementById('regTipoCamion').focus()"></div>
+                        <div id="contTipoCam" class="hidden flex flex-col gap-2"><label class="text-[10px] font-black text-slate-600 ml-3 uppercase">Tipo de Camión</label><select id="regTipoCamion" class="p-4 bg-slate-900 rounded-2xl border border-slate-800 outline-none focus:border-blue-500 font-bold text-slate-300"></select></div>
+                        <div id="contTelegramChatId" class="hidden flex flex-col gap-2"><label class="text-[10px] font-black text-slate-600 ml-3 uppercase">Telegram Chat ID</label><input id="regTelegramChatId" class="p-4 bg-slate-900 rounded-2xl border border-slate-800 outline-none focus:border-blue-500 font-bold" placeholder="ID DE CHAT TELEGRAM" onkeydown="if(event.key==='Enter') crearUsuario()"></div>
+                    </div>
+                    <button onclick="crearUsuario()" class="w-full bg-blue-600 hover:bg-blue-500 p-6 rounded-2xl font-black text-lg uppercase tracking-widest shadow-xl shadow-blue-900/40 transition-all active:scale-95 mb-12">Vincular Usuario</button>
+
+                    <h3 class="text-[11px] font-black text-slate-500 uppercase tracking-widest mb-4">Usuarios Registrados</h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left">
+                            <thead class="text-[10px] text-slate-600 uppercase tracking-widest border-b border-slate-800">
+                                <tr><th class="p-4">Ficha</th><th class="p-4">Nombre</th><th class="p-4">Detalles</th><th class="p-4 text-right">Acción</th></tr>
+                            </thead>
+                            <tbody id="listaUsuarios"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- SECCIÓN AUDITORÍA -->
+                <div id="adminAuditSection" class="hidden">
+                    <h3 class="text-[11px] font-black text-slate-500 uppercase tracking-widest mb-4">Registro de Auditoría</h3>
+                    <div class="overflow-x-auto max-h-[600px] overflow-y-auto scrollbar-thin">
+                        <table class="w-full text-left table-compact">
+                            <thead>
+                                <tr><th class="p-4">Fecha/Hora</th><th class="p-4">Ciclo</th><th class="p-4">Ficha</th><th class="p-4">Usuario</th><th class="p-4">Módulo</th><th class="p-4">Acción</th></tr>
+                            </thead>
+                            <tbody id="listaAuditoriaCuerpo"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- SECCIÓN CONFIGURACIÓN -->
+                <div id="adminConfigSection" class="hidden">
+                    <h3 class="text-[11px] font-black text-slate-500 uppercase tracking-widest mb-6">Parámetros del Núcleo</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                        <div class="flex flex-col gap-2">
+                            <label class="text-[10px] font-black text-slate-600 ml-3 uppercase">Total de Rampas</label>
+                            <input id="configRampas" type="number" class="p-4 bg-slate-900 rounded-2xl border border-slate-800 outline-none focus:border-blue-500 font-bold text-white" value="24">
+                        </div>
+                        <div class="flex flex-col gap-2 md:col-span-2">
+                            <label class="text-[10px] font-black text-slate-600 ml-3 uppercase">Lista de Tiendas (una por línea)</label>
+                            <textarea id="configTiendas" rows="6" class="p-4 bg-slate-900 rounded-2xl border border-slate-800 outline-none focus:border-blue-500 font-bold text-white text-xs font-mono"></textarea>
+                        </div>
+                        <div class="flex flex-col gap-2 md:col-span-3">
+                            <label class="text-[10px] font-black text-slate-600 ml-3 uppercase">Tipos de Camión (formato: CLAVE,Nombre Visible)</label>
+                            <textarea id="configCamiones" rows="6" class="p-4 bg-slate-900 rounded-2xl border border-slate-800 outline-none focus:border-blue-500 font-bold text-white text-xs font-mono"></textarea>
+                        </div>
+                    </div>
+                    <button onclick="guardarAjustesSistema()" class="mt-8 w-full bg-emerald-600 hover:bg-emerald-500 p-6 rounded-2xl font-black text-lg uppercase tracking-widest shadow-xl shadow-emerald-900/40 transition-all active:scale-95">Guardar Configuración</button>
+                </div>
+            </div>
+
+            <!-- MODULO CHOFER -->
+            <div id="chofer" class="hidden max-w-md mx-auto glass p-12 rounded-[3rem] shadow-2xl text-center flex flex-col gap-8">
+                <div>
+                    <h2 class="text-3xl font-black italic tracking-tighter text-amber-400 uppercase mb-2">Mi Estado</h2>
+                    <p id="infoChoferNombre" class="text-slate-400 text-sm font-bold uppercase tracking-widest">--</p>
+                </div>
+                <div id="infoChofer" class="text-2xl font-black uppercase tracking-widest min-h-[60px] flex items-center justify-center"></div>
+                <div id="accionChofer" class="w-full"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL SCANNER QR -->
+    <div id="modalScanner" class="hidden fixed inset-0 z-[100] bg-black/90 flex items-center justify-center p-4">
+        <div class="bg-slate-900 p-6 rounded-[2rem] w-full max-w-md relative border border-slate-700">
+            <button onclick="detenerScanner()" class="absolute top-4 right-4 text-slate-400 hover:text-white text-xl font-black">✕</button>
+            <h3 class="text-center text-white font-black uppercase tracking-widest mb-4 text-sm">Escanear Ficha</h3>
+            <div id="reader" class="rounded-xl overflow-hidden"></div>
+        </div>
+    </div>
+
+    <!-- MODAL SELECTOR GENÉRICO -->
+    <div id="selectorModal" class="hidden fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-slate-900 p-8 rounded-[2rem] w-full max-w-sm border border-slate-700 shadow-2xl max-h-[80vh] overflow-y-auto">
+            <h3 id="selectorModalTitle" class="text-center text-white font-black uppercase tracking-widest mb-6 text-sm">Seleccionar</h3>
+            <div id="selectorOptionsContainer" class="space-y-3"></div>
+            <button onclick="cerrarSelectorModal()" class="mt-6 w-full bg-slate-800 hover:bg-slate-700 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all">Cancelar</button>
+        </div>
+    </div>
+
+    <!-- ALERTA DE CONDUCTOR -->
+    <div id="driverAlert" class="hidden fixed bottom-8 left-1/2 -translate-x-1/2 z-[100] bg-blue-600 text-white px-8 py-4 rounded-2xl shadow-2xl shadow-blue-900/50 text-center">
+        <p id="driverMsg" class="text-xs font-bold uppercase tracking-wider"></p>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
