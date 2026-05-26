@@ -107,72 +107,25 @@ async function guardar() {
     finally { setUILoading(false); }
 }
 
-/**
- * Función de carga de datos MEJORADA.
- * Ahora pide cargas incrementales después de la primera vez y actualiza la nueva interfaz de patio.
- */
 async function cargar(silencioso = false) {
     if (!silencioso) setUILoading(true);
     try {
-        // Si tenemos un 'serverLastUpdate', lo enviamos al servidor para obtener cambios incrementales
         const urlFetch = serverLastUpdate ? `${SCRIPT_URL}?lastUpdate=${serverLastUpdate}` : SCRIPT_URL;
-        
         const response = await fetch(urlFetch);
         if (!response.ok) throw new Error(`Error red al cargar: ${response.status}`);
         const data = await response.json();
         
         if (data.changed === false) return;
-
-        // CASO 1: Es una actualización incremental (delta)
-        if (data.updates) {
-            console.log("Procesando actualización incremental...", data.updates);
-
-            const dataMap = {
-                usuarios: { array: usuarios, idKey: 'cod' },
-                patio: { array: patio, idKey: 'idCiclo' },
-                historialEntradas: { array: historialEntradas, idKey: 'idCiclo' },
-                solicitudesDespacho: { array: solicitudesDespacho, idKey: 'rampa' },
-                rampas: { array: rampas, idKey: 'rampa_id' },
-                auditoria: { array: auditoria, idKey: null }, // Solo se añaden
-                tiemposCiclos: { array: tiemposCiclos, idKey: 'ciclo' },
-                configuracion: { array: configuracion, idKey: 'clave' }
-            };
-
-            for (const key in data.updates) {
-                if (dataMap[key]) {
-                    const { array, idKey } = dataMap[key];
-                    const updatedItems = data.updates[key];
-
-                    updatedItems.forEach(item => {
-                        if (!idKey) {
-                            array.unshift(item);
-                            return;
-                        }
-                        const index = array.findIndex(existing => existing[idKey] === item[idKey]);
-                        if (index > -1) {
-                            array[index] = { ...array[index], ...item };
-                        } else {
-                            array.push(item);
-                        }
-                    });
-                }
-            }
-            serverLastUpdate = data.newLastUpdate;
-
-        // CASO 2: Es la primera carga o una carga completa
-        } else if (data.lastUpdate) {
-            console.log("Procesando carga completa...");
-            usuarios = data.usuarios || [];
-            patio = data.patio || [];
-            historialEntradas = data.historialEntradas || [];
-            solicitudesDespacho = data.solicitudesDespacho || [];
-            rampas = data.rampas || [];
-            auditoria = data.auditoria || [];
-            tiemposCiclos = data.tiemposCiclos || [];
-            configuracion = data.configuracion || [];
-            
-            serverLastUpdate = data.lastUpdate;
-        }
+        if (data.lastUpdate) serverLastUpdate = data.lastUpdate;
+        
+        usuarios = data.usuarios || [];
+        patio = data.patio || [];
+        historialEntradas = data.historialEntradas || [];
+        solicitudesDespacho = data.solicitudesDespacho || [];
+        rampas = data.rampas || [];
+        auditoria = data.auditoria || [];
+        tiemposCiclos = data.tiemposCiclos || [];
+        configuracion = data.configuracion || [];
 
         const cfgRampas = configuracion.find(c => c.clave === 'RAMPAS');
         if (cfgRampas && cfgRampas.valor) TOTAL_RAMPAS = parseInt(cfgRampas.valor);
@@ -199,9 +152,6 @@ async function cargar(silencioso = false) {
             selAdmin.innerHTML = '';
             Object.keys(TIPOS_CAMION).forEach(k => selAdmin.add(new Option(TIPOS_CAMION[k], k)));
         }
-
-        // Ejecutar sincronización de medidores para el nuevo diseño de patio
-        actualizarIndicadoresNuevoPatio();
 
     } catch (error) { 
         console.error("Fallo al cargar datos desde Google:", error); 
@@ -623,18 +573,12 @@ function renderPatio() {
         html += `<li class="border-t border-white/10 mt-2 pt-2 flex justify-between items-center"><span class="text-slate-500">Total</span><span class="text-white font-black">${f.length}</span></li>`;
         return html;
     };
-    
-    // Almacenamos los datos en los contenedores ocultos por compatibilidad
     document.getElementById("listaKpiPatio").innerHTML = kpiPatioList(["EN_PATIO", "ASIGNADO"]);
     document.getElementById("listaKpiRampa").innerHTML = kpiPatioList(["EN_RAMPA", "CARGA_LISTA", "CARGADO"]);
     
     const hoy = formatoFechaHora().fecha;
     const viajesHoy = historialEntradas.filter(h => h.fecha === hoy && h.estado === 'ENVIADO_A_TIENDA').length;
-    
-    // KPI original para compatibilidad
-    if (document.getElementById("kpiViajes")) {
-        document.getElementById("kpiViajes").innerText = viajesHoy;
-    }
+    document.getElementById("kpiViajes").innerText = viajesHoy;
 
     const prioridadOrden = { "EN_PATIO": 1, "ASIGNADO": 2, "EN_RAMPA": 3, "CARGA_LISTA": 4, "CARGADO": 5, "ENVIADO_A_TIENDA": 6, "FUERA_DEL_RECINTO": 7 };
     const listado = patio.filter(u => {
@@ -703,9 +647,6 @@ function renderPatio() {
     }).join("") || `<tr><td colspan="8" class="text-center text-slate-600 py-20 italic text-sm bg-slate-900/20 rounded-xl border border-dashed border-slate-700/50">No hay unidades activas en patio</td></tr>`;
     
     document.getElementById("listaSolicitudesDespacho").innerHTML = solicitudesDespacho.map(s => `<div class="bg-cyan-900/30 border border-cyan-500/20 p-3 rounded-lg text-[10px]"><p class="text-cyan-400 font-black">RAMPA ${s.rampa}</p><p class="text-slate-400 font-bold">${s.tipoReq || 'CUALQUIERA'}</p></div>`).join("") || `<p class="text-slate-600 italic text-[10px]">Sin solicitudes pendientes</p>`;
-
-    // === SINCRONIZAR LOS MEDIDORES DEL NUEVO DISEÑO DE PATIO ===
-    actualizarIndicadoresNuevoPatio();
 }
 
 async function asignarRampa(ficha) {
@@ -996,201 +937,3 @@ if ('serviceWorker' in navigator) {
       });
   });
 }
-
-
-/* ====================================================================== */
-/* === FUNCIONES ADICIONALES PARA EL NUEVO DISEÑO DE PATIO === */
-/* ====================================================================== */
-
-/**
- * Sincroniza y actualiza los nuevos indicadores visuales del panel de patio.
- */
-function actualizarIndicadoresNuevoPatio() {
-    try {
-        // 1. Unidades en Patio (Total)
-        const totalEnPatio = (typeof patio !== 'undefined') ? patio.filter(p => p.estado === 'EN_PATIO' || p.estado === 'ASIGNADO').length : 0;
-        const kpiPatioTotal = document.getElementById('kpiPatioTotal');
-        if (kpiPatioTotal) kpiPatioTotal.innerText = totalEnPatio;
-
-        // 2. Viajes de Hoy (Mapeado desde el historial operativo del día actual)
-        const hoy = formatoFechaHora().fecha;
-        const viajesHoy = (typeof historialEntradas !== 'undefined') 
-            ? historialEntradas.filter(h => h.fecha === hoy && h.estado === 'ENVIADO_A_TIENDA').length 
-            : 0;
-            
-        const kpiViajesHoy = document.getElementById('kpiViajesHoy');
-        if (kpiViajesHoy) kpiViajesHoy.innerText = viajesHoy;
-
-        const footerViajesCount = document.getElementById('footerViajesCount');
-        if (footerViajesCount) footerViajesCount.innerText = viajesHoy + " Viajes";
-
-        // 3. Unidades Despachadas (Unidades actualmente operando en rampa o cargadas)
-        const totalDespachadas = (typeof patio !== 'undefined') 
-            ? patio.filter(item => item.estado === 'CARGADO' || item.estado === 'CARGA_LISTA' || item.estado === 'EN_RAMPA').length 
-            : 0;
-
-        const footerDespachadasCount = document.getElementById('footerDespachadasCount');
-        if (footerDespachadasCount) footerDespachadasCount.innerText = totalDespachadas + " Unidades";
-
-        // 4. Actualización del reloj en el Pie de Página
-        const relojHeader = document.getElementById('reloj');
-        const relojFooter = document.getElementById('relojFooter');
-        if (relojHeader && relojFooter) {
-            relojFooter.innerText = relojHeader.innerText;
-        }
-
-        const fechaHeader = document.getElementById('fechaLarga');
-        const fechaFooter = document.getElementById('fechaFooter');
-        if (fechaHeader && fechaFooter) {
-            fechaFooter.innerText = fechaHeader.innerText || hoy;
-        }
-
-    } catch (e) {
-        console.warn("Advertencia al sincronizar indicadores del patio:", e);
-    }
-}
-// --- CONTINUACIÓN Y CIERRE DE script.js ---
-
-    if (document.getElementById("totalVehiculosPatio")) {
-        document.getElementById("totalVehiculosPatio").innerText = listado.length;
-    }
-
-    const gridPatio = document.getElementById("gridPatio");
-    if (!gridPatio) return;
-
-    if (listado.length === 0) {
-        gridPatio.innerHTML = `
-        <div class="col-span-full text-center py-12 glass rounded-[2rem] border border-dashed border-slate-700">
-            <p class="text-slate-500 font-bold uppercase tracking-widest text-[10px]">No se encontraron vehículos en el patio</p>
-        </div>`;
-        return;
-    }
-
-    gridPatio.innerHTML = listado.map(u => {
-        const est = ESTADOS_UI[u.estado] || { label: u.estado, text: "text-white" };
-        const ubicacionStr = u.rampa ? `RAMPA ${u.rampa}` : "📦 PATIO";
-        const destinoStr = u.tienda ? u.tienda : "SIN ASIGNAR";
-        
-        // Formatear el badge de tipo de camión de forma segura
-        let tipoNorm = (u.tipo || 'RIGIDO').replace(/ /g, '_').toUpperCase();
-        let labelCamion = TIPOS_CAMION[tipoNorm] || u.tipo || 'RIGIDO';
-
-        // Ocultar acciones si ya abandonó las operaciones activas
-        const mostrarAcciones = !['ENVIADO_A_TIENDA', 'FUERA_DEL_RECINTO'].includes(u.estado);
-
-        return `
-        <div class="glass p-6 rounded-[2rem] border border-slate-800 hover:border-slate-700 transition-all flex flex-col justify-between gap-4 bg-slate-900/40 group relative overflow-hidden">
-            <div class="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-white/5 to-transparent rounded-bl-full pointer-events-none"></div>
-            
-            <div>
-                <div class="flex justify-between items-start mb-3">
-                    <div>
-                        <span class="font-mono font-black text-xs text-blue-400 bg-blue-500/5 px-3 py-1.5 rounded-xl border border-blue-500/10">
-                            ${u.user}
-                        </span>
-                        <div class="text-[9px] text-slate-500 font-bold tracking-widest mt-2 uppercase">${labelCamion}</div>
-                    </div>
-                    <div class="text-right">
-                        <span class="text-[10px] font-black uppercase tracking-wider ${est.text}">
-                            ● ${est.label}
-                        </span>
-                        <div class="text-[9px] font-mono font-bold text-slate-600 mt-1">${u.idCiclo}</div>
-                    </div>
-                </div>
-
-                <div class="space-y-1.5 border-t border-b border-slate-800/60 my-3 py-3">
-                    <div class="flex justify-between text-xs">
-                        <span class="text-slate-500 font-bold uppercase text-[9px] tracking-tight">Chofer:</span>
-                        <span class="text-slate-300 font-black uppercase truncate max-w-[150px]">${u.nom}</span>
-                    </div>
-                    <div class="flex justify-between text-xs">
-                        <span class="text-slate-500 font-bold uppercase text-[9px] tracking-tight">Ubicación:</span>
-                        <span class="text-slate-200 font-black uppercase">${ubicacionStr}</span>
-                    </div>
-                    <div class="flex justify-between text-xs">
-                        <span class="text-slate-500 font-bold uppercase text-[9px] tracking-tight">Destino:</span>
-                        <span class="text-emerald-400 font-black uppercase">${destinoStr}</span>
-                    </div>
-                </div>
-
-                <div class="flex justify-between items-center text-[9px] text-slate-500 font-mono font-bold">
-                    <span>INGRESO: ${u.hora}</span>
-                    <span>HACE: ${calcularDiferenciaMinutos(u.timestamp, Date.now())}</span>
-                </div>
-            </div>
-
-            ${mostrarAcciones ? `
-            <div class="pt-2 border-t border-slate-800/40 grid grid-cols-2 gap-2">
-                <button onclick="cambiarEstadoManualmente('${u.user}')" 
-                        class="bg-slate-800 hover:bg-slate-700 text-slate-300 py-2 px-3 rounded-xl font-black text-[9px] uppercase tracking-wider transition-colors border border-slate-700/50">
-                    ⚙️ Estado
-                </button>
-                <button onclick="liberarVehiculoPatio('${u.user}')" 
-                        class="bg-red-950/20 hover:bg-red-900/30 text-red-400 py-2 px-3 rounded-xl font-black text-[9px] uppercase tracking-wider transition-colors border border-red-500/10">
-                    ❌ Forzar Fin
-                </button>
-            </div>
-            ` : `
-            <div class="text-center py-2 bg-slate-950/40 rounded-xl border border-slate-800">
-                <span class="text-[8px] font-black text-slate-600 uppercase tracking-widest">Ciclo Concluido</span>
-            </div>
-            `}
-        </div>`;
-    }).join("");
-}
-
-/**
- * Fuerza el fin de ciclo o borrado directo desde el patio en caso de trabas lógicas.
- */
-async function liberarVehiculoPatio(ficha) {
-    if (!confirm(`¿Estás seguro de forzar la finalización del ciclo de la ficha ${ficha}? Esto liberará sus rampas asociadas.`)) return;
-    
-    const idx = patio.findIndex(p => p.user === ficha);
-    if (idx === -1) return;
-
-    const vehiculo = patio[idx];
-    const fh = formatoFechaHora();
-
-    if (vehiculo.rampa) {
-        const rIndex = rampas.findIndex(r => r.rampa_id == vehiculo.rampa);
-        if (rIndex !== -1) rampas[rIndex].status = "LIBRE";
-    }
-
-    vehiculo.estado = "FUERA_DEL_RECINTO";
-    vehiculo.lastUpdate = Date.now();
-
-    registrarAuditoria(ficha, vehiculo.nom, "PATIO (Forzado)", "Ciclo terminado manualmente por operador", vehiculo.idCiclo);
-    
-    // Mover al histórico de control de tiempos de forma segura
-    tiemposCiclos.unshift({
-        fecha: fh.fecha,
-        ficha: ficha,
-        ciclo: vehiculo.idCiclo,
-        hora_llegada: vehiculo.hora,
-        tiempo_patio: calcularDiferenciaMinutos(vehiculo.timestamp, Date.now()),
-        tiempo_rampa: "FORZADO",
-        tiempo_cargado: "FORZADO",
-        hora_salida: fh.hora
-    });
-
-    await guardar();
-    renderPatio();
-}
-
-/**
- * Sincroniza y recalcula los elementos visuales de los medidores de KPI de la interfaz.
- */
-function actualizarIndicadoresNuevoPatio() {
-    if (!patio) return;
-    const activos = patio.filter(p => !['ENVIADO_A_TIENDA', 'FUERA_DEL_RECINTO'].includes(p.estado)).length;
-    const enRampa = patio.filter(p => ['EN_RAMPA', 'CARGA_LISTA'].includes(p.estado)).length;
-
-    if (document.getElementById("kpiTotalActivos")) {
-        document.getElementById("kpiTotalActivos").innerText = activos;
-    }
-    if (document.getElementById("kpiTotalRampasOcupadas")) {
-        document.getElementById("kpiTotalRampasOcupadas").innerText = `${enRampa}/${TOTAL_RAMPAS}`;
-    }
-}
-
-// --- END OF FILE script.js ---
