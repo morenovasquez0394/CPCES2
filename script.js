@@ -1049,3 +1049,148 @@ function actualizarIndicadoresNuevoPatio() {
         console.warn("Advertencia al sincronizar indicadores del patio:", e);
     }
 }
+// --- CONTINUACIÓN Y CIERRE DE script.js ---
+
+    if (document.getElementById("totalVehiculosPatio")) {
+        document.getElementById("totalVehiculosPatio").innerText = listado.length;
+    }
+
+    const gridPatio = document.getElementById("gridPatio");
+    if (!gridPatio) return;
+
+    if (listado.length === 0) {
+        gridPatio.innerHTML = `
+        <div class="col-span-full text-center py-12 glass rounded-[2rem] border border-dashed border-slate-700">
+            <p class="text-slate-500 font-bold uppercase tracking-widest text-[10px]">No se encontraron vehículos en el patio</p>
+        </div>`;
+        return;
+    }
+
+    gridPatio.innerHTML = listado.map(u => {
+        const est = ESTADOS_UI[u.estado] || { label: u.estado, text: "text-white" };
+        const ubicacionStr = u.rampa ? `RAMPA ${u.rampa}` : "📦 PATIO";
+        const destinoStr = u.tienda ? u.tienda : "SIN ASIGNAR";
+        
+        // Formatear el badge de tipo de camión de forma segura
+        let tipoNorm = (u.tipo || 'RIGIDO').replace(/ /g, '_').toUpperCase();
+        let labelCamion = TIPOS_CAMION[tipoNorm] || u.tipo || 'RIGIDO';
+
+        // Ocultar acciones si ya abandonó las operaciones activas
+        const mostrarAcciones = !['ENVIADO_A_TIENDA', 'FUERA_DEL_RECINTO'].includes(u.estado);
+
+        return `
+        <div class="glass p-6 rounded-[2rem] border border-slate-800 hover:border-slate-700 transition-all flex flex-col justify-between gap-4 bg-slate-900/40 group relative overflow-hidden">
+            <div class="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-white/5 to-transparent rounded-bl-full pointer-events-none"></div>
+            
+            <div>
+                <div class="flex justify-between items-start mb-3">
+                    <div>
+                        <span class="font-mono font-black text-xs text-blue-400 bg-blue-500/5 px-3 py-1.5 rounded-xl border border-blue-500/10">
+                            ${u.user}
+                        </span>
+                        <div class="text-[9px] text-slate-500 font-bold tracking-widest mt-2 uppercase">${labelCamion}</div>
+                    </div>
+                    <div class="text-right">
+                        <span class="text-[10px] font-black uppercase tracking-wider ${est.text}">
+                            ● ${est.label}
+                        </span>
+                        <div class="text-[9px] font-mono font-bold text-slate-600 mt-1">${u.idCiclo}</div>
+                    </div>
+                </div>
+
+                <div class="space-y-1.5 border-t border-b border-slate-800/60 my-3 py-3">
+                    <div class="flex justify-between text-xs">
+                        <span class="text-slate-500 font-bold uppercase text-[9px] tracking-tight">Chofer:</span>
+                        <span class="text-slate-300 font-black uppercase truncate max-w-[150px]">${u.nom}</span>
+                    </div>
+                    <div class="flex justify-between text-xs">
+                        <span class="text-slate-500 font-bold uppercase text-[9px] tracking-tight">Ubicación:</span>
+                        <span class="text-slate-200 font-black uppercase">${ubicacionStr}</span>
+                    </div>
+                    <div class="flex justify-between text-xs">
+                        <span class="text-slate-500 font-bold uppercase text-[9px] tracking-tight">Destino:</span>
+                        <span class="text-emerald-400 font-black uppercase">${destinoStr}</span>
+                    </div>
+                </div>
+
+                <div class="flex justify-between items-center text-[9px] text-slate-500 font-mono font-bold">
+                    <span>INGRESO: ${u.hora}</span>
+                    <span>HACE: ${calcularDiferenciaMinutos(u.timestamp, Date.now())}</span>
+                </div>
+            </div>
+
+            ${mostrarAcciones ? `
+            <div class="pt-2 border-t border-slate-800/40 grid grid-cols-2 gap-2">
+                <button onclick="cambiarEstadoManualmente('${u.user}')" 
+                        class="bg-slate-800 hover:bg-slate-700 text-slate-300 py-2 px-3 rounded-xl font-black text-[9px] uppercase tracking-wider transition-colors border border-slate-700/50">
+                    ⚙️ Estado
+                </button>
+                <button onclick="liberarVehiculoPatio('${u.user}')" 
+                        class="bg-red-950/20 hover:bg-red-900/30 text-red-400 py-2 px-3 rounded-xl font-black text-[9px] uppercase tracking-wider transition-colors border border-red-500/10">
+                    ❌ Forzar Fin
+                </button>
+            </div>
+            ` : `
+            <div class="text-center py-2 bg-slate-950/40 rounded-xl border border-slate-800">
+                <span class="text-[8px] font-black text-slate-600 uppercase tracking-widest">Ciclo Concluido</span>
+            </div>
+            `}
+        </div>`;
+    }).join("");
+}
+
+/**
+ * Fuerza el fin de ciclo o borrado directo desde el patio en caso de trabas lógicas.
+ */
+async function liberarVehiculoPatio(ficha) {
+    if (!confirm(`¿Estás seguro de forzar la finalización del ciclo de la ficha ${ficha}? Esto liberará sus rampas asociadas.`)) return;
+    
+    const idx = patio.findIndex(p => p.user === ficha);
+    if (idx === -1) return;
+
+    const vehiculo = patio[idx];
+    const fh = formatoFechaHora();
+
+    if (vehiculo.rampa) {
+        const rIndex = rampas.findIndex(r => r.rampa_id == vehiculo.rampa);
+        if (rIndex !== -1) rampas[rIndex].status = "LIBRE";
+    }
+
+    vehiculo.estado = "FUERA_DEL_RECINTO";
+    vehiculo.lastUpdate = Date.now();
+
+    registrarAuditoria(ficha, vehiculo.nom, "PATIO (Forzado)", "Ciclo terminado manualmente por operador", vehiculo.idCiclo);
+    
+    // Mover al histórico de control de tiempos de forma segura
+    tiemposCiclos.unshift({
+        fecha: fh.fecha,
+        ficha: ficha,
+        ciclo: vehiculo.idCiclo,
+        hora_llegada: vehiculo.hora,
+        tiempo_patio: calcularDiferenciaMinutos(vehiculo.timestamp, Date.now()),
+        tiempo_rampa: "FORZADO",
+        tiempo_cargado: "FORZADO",
+        hora_salida: fh.hora
+    });
+
+    await guardar();
+    renderPatio();
+}
+
+/**
+ * Sincroniza y recalcula los elementos visuales de los medidores de KPI de la interfaz.
+ */
+function actualizarIndicadoresNuevoPatio() {
+    if (!patio) return;
+    const activos = patio.filter(p => !['ENVIADO_A_TIENDA', 'FUERA_DEL_RECINTO'].includes(p.estado)).length;
+    const enRampa = patio.filter(p => ['EN_RAMPA', 'CARGA_LISTA'].includes(p.estado)).length;
+
+    if (document.getElementById("kpiTotalActivos")) {
+        document.getElementById("kpiTotalActivos").innerText = activos;
+    }
+    if (document.getElementById("kpiTotalRampasOcupadas")) {
+        document.getElementById("kpiTotalRampasOcupadas").innerText = `${enRampa}/${TOTAL_RAMPAS}`;
+    }
+}
+
+// --- END OF FILE script.js ---
